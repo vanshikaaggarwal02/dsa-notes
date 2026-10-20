@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Greedy Algorithms: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+</style></head>
+<body><main>
+<h1>Greedy Algorithms: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Greedy section (all 14 problems). Open a card after trying the problem from memory.</p>
+<section class="tpl">
+<h2>The pattern: sort, then take the best available choice</h2>
+<p>A greedy solution makes the locally best choice at each step and never looks back. It works when that choice can be shown not to hurt the final answer (an exchange argument: swapping any other choice for the greedy one cannot make things worse).</p>
+<p><b>Common sort keys:</b> value per weight (knapsack), <b>end time</b> to fit the most intervals, <b>start time</b> to merge intervals, and profit descending for scheduling with deadlines. If a greedy idea fails on a small counter-example, the problem likely needs DP.</p>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const P=[
+{t:"Assign Cookies",g:"Easy",
+s:"Each child has a greed g[i], each cookie has a size s[j]. A cookie satisfies a child if size ≥ greed. Maximise the number of satisfied children.",
+h:["Sort both arrays. Give each cookie to the least greedy child it can satisfy.","If the smallest unused cookie is too small for the current child, it is too small for everyone after, so skip it."],
+cx:"O(n log n + m log m)",
+c:`static int findContentChildren(int[] g, int[] s) {
+    Arrays.sort(g);
+    Arrays.sort(s);
+    int child = 0, cookie = 0;
+    while (child < g.length && cookie < s.length) {
+        if (s[cookie] >= g[child]) child++;   // this cookie works
+        cookie++;
+    }
+    return child;
+}`},
+{t:"Lemonade Change",g:"Easy",
+s:"Lemonade costs 5. Customers pay with 5, 10 or 20. Can you give every customer correct change, starting with none?",
+h:["Track how many 5s and 10s you hold.","For a 20, prefer giving 10 + 5 over 5 + 5 + 5, because 5s are more useful (they can change both a 10 and a 20)."],
+cx:"O(n), O(1)",
+c:`static boolean lemonadeChange(int[] bills) {
+    int five = 0, ten = 0;
+    for (int b : bills) {
+        if (b == 5) {
+            five++;
+        } else if (b == 10) {
+            if (five == 0) return false;
+            five--;
+            ten++;
+        } else {
+            if (ten > 0 && five > 0) { ten--; five--; }
+            else if (five >= 3) five -= 3;
+            else return false;
+        }
+    }
+    return true;
+}`},
+{t:"Fractional Knapsack",g:"Easy",
+s:"Items have a value and a weight, and you may take a fraction of any item. Maximise the total value within the capacity.",
+h:["Sort items by value per unit weight, highest first.","Take whole items while they fit. For the first one that does not fit, take the fraction that fills the bag."],
+cx:"O(n log n)",
+c:`static double fractionalKnapsack(int[] val, int[] wt, int capacity) {
+    int n = val.length;
+    Integer[] idx = new Integer[n];
+    for (int i = 0; i < n; i++) idx[i] = i;
+    // best value per unit weight first
+    Arrays.sort(idx, (a, b) ->
+        Double.compare((double) val[b] / wt[b], (double) val[a] / wt[a]));
+    double total = 0;
+    for (int i : idx) {
+        if (capacity == 0) break;
+        int take = Math.min(wt[i], capacity);
+        total += (double) val[i] * take / wt[i];
+        capacity -= take;
+    }
+    return total;
+}`},
+{t:"Jump Game I",g:"Easy",
+s:"nums[i] is the maximum jump length from index i. Can you reach the last index?",
+h:["Keep the farthest index reachable so far.","If you ever stand at an index beyond the farthest reachable, you are stuck. Otherwise extend the farthest."],
+cx:"O(n), O(1)",
+c:`static boolean canJump(int[] nums) {
+    int farthest = 0;
+    for (int i = 0; i < nums.length; i++) {
+        if (i > farthest) return false;   // cannot reach index i
+        farthest = Math.max(farthest, i + nums[i]);
+    }
+    return true;
+}`},
+{t:"Shortest Job First",g:"Scheduling and intervals",
+s:"Jobs have burst times and run one after another. Find the average waiting time.",
+h:["Running the shortest job first minimises the total waiting time.","A job’s waiting time is the sum of the burst times of everything before it. Sort, then keep a running total."],
+cx:"O(n log n)",
+c:`static double averageWaitingTime(int[] burst) {
+    Arrays.sort(burst);
+    long wait = 0, elapsed = 0;
+    for (int b : burst) {
+        wait += elapsed;      // this job waited for all earlier jobs
+        elapsed += b;
+    }
+    return (double) wait / burst.length;
+}`},
+{t:"Job Sequencing Problem",g:"Scheduling and intervals",
+s:"Each job takes one unit of time, has a deadline and a profit. Maximise total profit and report the number of jobs done and the profit.",
+h:["Sort jobs by profit, highest first.","Place each job in the latest free slot on or before its deadline. If no slot is free, skip the job.","Putting it as late as possible leaves earlier slots open for other jobs."],
+cx:"O(n log n + n × maxDeadline)",
+c:`static int[] jobSequencing(int[] deadline, int[] profit) {
+    int n = deadline.length, maxD = 0;
+    for (int d : deadline) maxD = Math.max(maxD, d);
+    Integer[] idx = new Integer[n];
+    for (int i = 0; i < n; i++) idx[i] = i;
+    Arrays.sort(idx, (a, b) -> profit[b] - profit[a]);   // best profit first
+    boolean[] used = new boolean[maxD + 1];
+    int count = 0, total = 0;
+    for (int i : idx) {
+        for (int d = Math.min(deadline[i], maxD); d >= 1; d--) {
+            if (!used[d]) {
+                used[d] = true;
+                count++;
+                total += profit[i];
+                break;
+            }
+        }
+    }
+    return new int[]{count, total};
+}`},
+{t:"N Meetings in One Room",g:"Scheduling and intervals",
+s:"Given start and end times, find the maximum number of meetings that can use one room.",
+h:["Sort meetings by end time. The one that finishes earliest leaves the most room for later ones.","Take a meeting if it starts strictly after the last chosen one ends (check the problem statement for strict or non-strict)."],
+cx:"O(n log n)",
+c:`static int maxMeetings(int[] start, int[] end) {
+    int n = start.length;
+    int[][] m = new int[n][2];
+    for (int i = 0; i < n; i++) {
+        m[i][0] = start[i];
+        m[i][1] = end[i];
+    }
+    Arrays.sort(m, (a, b) -> Integer.compare(a[1], b[1]));   // earliest finish first
+    int count = 1, lastEnd = m[0][1];
+    for (int i = 1; i < n; i++) {
+        if (m[i][0] > lastEnd) {
+            count++;
+            lastEnd = m[i][1];
+        }
+    }
+    return count;
+}`},
+{t:"Non-overlapping Intervals",g:"Scheduling and intervals",
+s:"Find the minimum number of intervals to remove so the rest do not overlap.",
+h:["Same idea as N Meetings: keep the maximum set of non-overlapping intervals.","Answer = total − kept. Touching intervals like [1,2] and [2,3] do not overlap here."],
+cx:"O(n log n)",
+c:`static int eraseOverlapIntervals(int[][] iv) {
+    Arrays.sort(iv, (a, b) -> Integer.compare(a[1], b[1]));   // by end time
+    int kept = 1, lastEnd = iv[0][1];
+    for (int i = 1; i < iv.length; i++) {
+        if (iv[i][0] >= lastEnd) {
+            kept++;
+            lastEnd = iv[i][1];
+        }
+    }
+    return iv.length - kept;
+}`},
+{t:"Insert Interval",g:"Scheduling and intervals",
+s:"A sorted list of non-overlapping intervals and a new interval. Insert it, merging overlaps.",
+h:["Three phases in one pass: copy intervals that end before the new one starts.","Merge every interval that overlaps by widening the new interval.","Copy the rest."],
+cx:"O(n)",
+c:`static int[][] insert(int[][] iv, int[] nw) {
+    List<int[]> res = new ArrayList<>();
+    int i = 0, n = iv.length;
+    // 1. entirely before the new interval
+    while (i < n && iv[i][1] < nw[0]) res.add(iv[i++]);
+    // 2. overlapping: widen the new interval
+    while (i < n && iv[i][0] <= nw[1]) {
+        nw[0] = Math.min(nw[0], iv[i][0]);
+        nw[1] = Math.max(nw[1], iv[i][1]);
+        i++;
+    }
+    res.add(nw);
+    // 3. entirely after
+    while (i < n) res.add(iv[i++]);
+    return res.toArray(new int[0][]);
+}`},
+{t:"Merge Intervals",g:"Scheduling and intervals",
+s:"Merge all overlapping intervals.",
+h:["Sort by start time.","If the current interval starts after the last merged one ends, start a new one. Otherwise extend the last one’s end."],
+cx:"O(n log n)",
+c:`static int[][] merge(int[][] iv) {
+    Arrays.sort(iv, (a, b) -> Integer.compare(a[0], b[0]));   // by start time
+    List<int[]> res = new ArrayList<>();
+    for (int[] cur : iv) {
+        if (res.isEmpty()) {
+            res.add(cur);
+            continue;
+        }
+        int[] last = res.get(res.size() - 1);
+        if (last[1] < cur[0]) res.add(cur);               // gap, new interval
+        else last[1] = Math.max(last[1], cur[1]);          // overlap, extend
+    }
+    return res.toArray(new int[0][]);
+}`},
+{t:"Minimum Platforms Required",g:"Scheduling and intervals",
+s:"Given arrival and departure times of trains, find the minimum number of platforms needed.",
+h:["Sort arrivals and departures separately. Sweep through the arrivals.","Before each arrival, free the platforms whose trains have already left. Then add one for this train.","Answer = the largest number of platforms in use at any moment. A train arriving exactly when another leaves needs a separate platform."],
+cx:"O(n log n)",
+c:`static int minPlatforms(int[] arr, int[] dep) {
+    Arrays.sort(arr);
+    Arrays.sort(dep);
+    int need = 0, best = 0, j = 0;
+    for (int i = 0; i < arr.length; i++) {
+        while (dep[j] < arr[i]) {   // trains that already left
+            j++;
+            need--;
+        }
+        need++;
+        best = Math.max(best, need);
+    }
+    return best;
+}`},
+{t:"Valid Parenthesis String",g:"Hard",
+s:"A string of (, ) and *. A * may be (, ) or empty. Is it valid?",
+h:["Track the range [lo, hi] of how many open brackets could be unclosed.","( raises both. ) lowers both. * lowers lo (as ) ) and raises hi (as ( ).","If hi drops below 0 there are too many ). Clamp lo at 0. At the end the string is valid if 0 is possible, so lo == 0."],
+cx:"O(n), O(1)",
+c:`static boolean checkValidString(String s) {
+    int lo = 0, hi = 0;
+    for (char c : s.toCharArray()) {
+        if (c == '(') { lo++; hi++; }
+        else if (c == ')') { lo--; hi--; }
+        else { lo--; hi++; }          // * can be ), empty or (
+        if (hi < 0) return false;     // too many ) even using every *
+        lo = Math.max(lo, 0);         // open count cannot go negative
+    }
+    return lo == 0;
+}`},
+{t:"Candy",g:"Hard",
+s:"Children in a row have ratings. Everyone gets at least 1 candy, and a child with a higher rating than a neighbour gets more than that neighbour. Minimise the candies.",
+h:["Start everyone at 1.","Left to right: if a child outranks the one on the left, give one more than that neighbour.","Right to left: if a child outranks the one on the right, take the larger of the current value and neighbour + 1.","Two passes satisfy both neighbours."],
+cx:"O(n), O(n)",
+c:`static int candy(int[] ratings) {
+    int n = ratings.length;
+    int[] c = new int[n];
+    Arrays.fill(c, 1);
+    for (int i = 1; i < n; i++)                  // left to right
+        if (ratings[i] > ratings[i - 1]) c[i] = c[i - 1] + 1;
+    for (int i = n - 2; i >= 0; i--)             // right to left
+        if (ratings[i] > ratings[i + 1]) c[i] = Math.max(c[i], c[i + 1] + 1);
+    int total = 0;
+    for (int x : c) total += x;
+    return total;
+}`},
+{t:"Jump Game II",g:"Hard",
+s:"You can always reach the last index. Find the minimum number of jumps.",
+h:["Think in levels: curEnd is the farthest index reachable with the jumps made so far.","Scan, tracking the farthest index reachable from anywhere in the current level.","On reaching curEnd, you must jump once more, and the new curEnd is that farthest."],
+cx:"O(n), O(1)",
+c:`static int jump(int[] nums) {
+    int jumps = 0, curEnd = 0, farthest = 0;
+    for (int i = 0; i < nums.length - 1; i++) {
+        farthest = Math.max(farthest, i + nums[i]);
+        if (i == curEnd) {      // end of the current jump's range
+            jumps++;
+            curEnd = farthest;
+        }
+    }
+    return jumps;
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|continue|break)\b|\b(int|long|double|boolean|char|void|true|false|List|ArrayList|String|Integer)\b|\b(\d+)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+const KEY="greedy-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+esc(p.s)+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p></div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>

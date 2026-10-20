@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sliding Window / Two Pointers: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+</style></head>
+<body><main>
+<h1>Sliding Window / Two Pointers: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Sliding Window section (all 13 problems). Open a card after trying the problem from memory.</p>
+<section class="tpl">
+<h2>The pattern: a window with a left and a right edge</h2>
+<p>The right edge moves forward every step and adds a new element. The left edge moves forward only when the window breaks a rule. Each element enters and leaves at most once, so the work is O(n) instead of O(n²).</p>
+<p><b>Spot it:</b> “longest or shortest subarray or substring such that…”, or “count subarrays with…”. For <i>exactly K</i> counting problems, use <b>atMost(K) − atMost(K − 1)</b>.</p>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const P=[
+{t:"Pattern and Template (Theory)",g:"Theory",
+s:"The three window shapes and when to use each.",
+h:["Constant window: size is fixed at k. Add the new element, drop the one that falls out.","Longest valid window: grow right, and shrink left while the window is invalid. Record the length after fixing it.","Shortest valid window: grow right, and while the window is valid, record it and shrink left.","Counting exactly K: count windows with at most K, minus windows with at most K − 1."],
+cx:"Usually O(n)",
+c:`// 1. constant window of size k
+for (int r = 0; r < n; r++) {
+    add(a[r]);
+    if (r >= k) remove(a[r - k]);
+}
+// 2. longest valid window
+int l = 0, best = 0;
+for (int r = 0; r < n; r++) {
+    add(a[r]);
+    while (!valid()) {
+        remove(a[l]);
+        l++;
+    }
+    best = Math.max(best, r - l + 1);
+}
+// 3. exactly K  =  atMost(K) - atMost(K - 1)`},
+{t:"Maximum Points You Can Obtain from Cards",g:"Constant window",
+s:"Take exactly k cards, each from either the left or right end. Maximise the total points.",
+h:["The k cards you take are some from the left end and the rest from the right end.","Start with all k from the left. Then move one card at a time from the left group to the right group, tracking the best sum."],
+cx:"O(k), O(1)",
+c:`static int maxScore(int[] cards, int k) {
+    int n = cards.length, sum = 0;
+    for (int i = 0; i < k; i++) sum += cards[i];   // all k from the left
+    int best = sum;
+    for (int i = 1; i <= k; i++) {
+        sum -= cards[k - i];     // give up one card from the left
+        sum += cards[n - i];     // take one card from the right
+        best = Math.max(best, sum);
+    }
+    return best;
+}`},
+{t:"Longest Substring Without Repeating Characters",g:"Longest / smallest window",
+s:"Find the length of the longest substring with no repeated character.",
+h:["Store the last index where each character appeared.","If the new character was seen inside the current window, jump the left edge just past that earlier copy.","Record the window length at each step."],
+cx:"O(n), O(1) for a fixed alphabet",
+c:`static int lengthOfLongestSubstring(String s) {
+    int[] last = new int[256];
+    Arrays.fill(last, -1);
+    int l = 0, best = 0;
+    for (int r = 0; r < s.length(); r++) {
+        char c = s.charAt(r);
+        if (last[c] >= l) l = last[c] + 1;   // skip past the earlier copy
+        last[c] = r;
+        best = Math.max(best, r - l + 1);
+    }
+    return best;
+}`},
+{t:"Max Consecutive Ones III",g:"Longest / smallest window",
+s:"You may flip at most k zeros to ones. Find the longest run of ones.",
+h:["Longest window containing at most k zeros.","Count zeros inside the window. If the count passes k, move the left edge forward until it is back to k."],
+cx:"O(n), O(1)",
+c:`static int longestOnes(int[] nums, int k) {
+    int l = 0, zeros = 0, best = 0;
+    for (int r = 0; r < nums.length; r++) {
+        if (nums[r] == 0) zeros++;
+        while (zeros > k) {
+            if (nums[l] == 0) zeros--;
+            l++;
+        }
+        best = Math.max(best, r - l + 1);
+    }
+    return best;
+}`},
+{t:"Fruit Into Baskets",g:"Longest / smallest window",
+s:"Pick fruits from consecutive trees using two baskets, each holding one type. Find the most fruits you can pick.",
+h:["Longest subarray with at most 2 distinct values.","Keep a count map. When it holds more than 2 types, shrink from the left and delete a type when its count reaches 0."],
+cx:"O(n), O(1)",
+c:`static int totalFruit(int[] fruits) {
+    Map<Integer, Integer> count = new HashMap<>();
+    int l = 0, best = 0;
+    for (int r = 0; r < fruits.length; r++) {
+        count.merge(fruits[r], 1, Integer::sum);
+        while (count.size() > 2) {
+            int f = fruits[l++];
+            if (count.merge(f, -1, Integer::sum) == 0) count.remove(f);
+        }
+        best = Math.max(best, r - l + 1);
+    }
+    return best;
+}`},
+{t:"Longest Substring With At Most K Distinct Characters",g:"Longest / smallest window",
+s:"Find the length of the longest substring with at most k distinct characters.",
+h:["Fruit Into Baskets with 2 replaced by k.","Shrink from the left while the map has more than k characters."],
+cx:"O(n), O(k)",
+c:`static int longestKDistinct(String s, int k) {
+    if (k == 0) return 0;
+    Map<Character, Integer> count = new HashMap<>();
+    int l = 0, best = 0;
+    for (int r = 0; r < s.length(); r++) {
+        count.merge(s.charAt(r), 1, Integer::sum);
+        while (count.size() > k) {
+            char c = s.charAt(l++);
+            if (count.merge(c, -1, Integer::sum) == 0) count.remove(c);
+        }
+        best = Math.max(best, r - l + 1);
+    }
+    return best;
+}`},
+{t:"Longest Repeating Character Replacement",g:"Longest / smallest window",
+s:"You may change at most k characters to any letter. Find the longest substring of one repeated letter.",
+h:["A window is fixable if (window length − count of its most frequent letter) ≤ k.","The window never shrinks. When it becomes invalid, it slides forward by one, keeping its size.","maxFreq is allowed to go stale: the answer only grows when a new, higher maxFreq appears, so a stale value cannot give a wrong answer."],
+cx:"O(n), O(26)",
+c:`static int characterReplacement(String s, int k) {
+    int[] freq = new int[26];
+    int l = 0, maxFreq = 0, best = 0;
+    for (int r = 0; r < s.length(); r++) {
+        maxFreq = Math.max(maxFreq, ++freq[s.charAt(r) - 'A']);
+        // too many replacements needed: slide the window right
+        if (r - l + 1 - maxFreq > k) {
+            freq[s.charAt(l) - 'A']--;
+            l++;
+        }
+        best = Math.max(best, r - l + 1);
+    }
+    return best;
+}`},
+{t:"Minimum Window Substring",g:"Longest / smallest window",
+s:"Find the smallest substring of s that contains every character of t, with multiplicity.",
+h:["need[c] counts how many of each character are still required. missing counts the total still needed.","Grow right. When missing hits 0 the window is valid, so record it and shrink from the left while it stays valid.","A character that was needed and is dropped makes missing go back up."],
+cx:"O(n + m)",
+c:`static String minWindow(String s, String t) {
+    int[] need = new int[128];
+    for (char c : t.toCharArray()) need[c]++;
+    int missing = t.length(), l = 0;
+    int bestStart = 0, bestLen = Integer.MAX_VALUE;
+    for (int r = 0; r < s.length(); r++) {
+        if (need[s.charAt(r)]-- > 0) missing--;     // a needed char arrived
+        while (missing == 0) {                      // valid window, shrink it
+            if (r - l + 1 < bestLen) {
+                bestLen = r - l + 1;
+                bestStart = l;
+            }
+            if (++need[s.charAt(l)] > 0) missing++; // dropped a needed char
+            l++;
+        }
+    }
+    return bestLen == Integer.MAX_VALUE
+        ? "" : s.substring(bestStart, bestStart + bestLen);
+}`},
+{t:"Minimum Window Subsequence",g:"Longest / smallest window",
+s:"Find the smallest substring of s1 in which s2 appears as a subsequence (in order, not necessarily adjacent).",
+h:["Scan forward matching s2 one character at a time. When all of s2 is matched, you have the window’s end.","Scan backward from that end, matching s2 in reverse, to find the tightest start.","Record the window, then restart just after that start."],
+cx:"O(n × m) worst case",
+c:`static String minWindowSubsequence(String s1, String s2) {
+    int n = s1.length(), m = s2.length();
+    int i = 0, bestLen = Integer.MAX_VALUE, bestStart = -1;
+    while (i < n) {
+        int j = 0;
+        // forward: find the end of a window that matches all of s2
+        while (i < n) {
+            if (s1.charAt(i) == s2.charAt(j)) j++;
+            if (j == m) break;
+            i++;
+        }
+        if (i == n) break;
+        int end = i;
+        // backward: shrink to the tightest start
+        j = m - 1;
+        while (j >= 0) {
+            if (s1.charAt(i) == s2.charAt(j)) j--;
+            i--;
+        }
+        i++;
+        if (end - i + 1 < bestLen) {
+            bestLen = end - i + 1;
+            bestStart = i;
+        }
+        i++;   // restart just after the window start
+    }
+    return bestStart == -1 ? "" : s1.substring(bestStart, bestStart + bestLen);
+}`},
+{t:"Number of Substrings Containing All Three Characters",g:"Counting subarrays",
+s:"Count substrings of a string of a, b and c that contain at least one of each.",
+h:["Track the last index where each of a, b and c appeared.","For a substring ending at r, it is valid if it starts at or before the oldest of the three last-seen indices. That gives (1 + min of the three) valid starts.","If a letter has not appeared, its last index is −1 and the formula adds 0."],
+cx:"O(n), O(1)",
+c:`static int numberOfSubstrings(String s) {
+    int[] last = {-1, -1, -1};
+    int count = 0;
+    for (int r = 0; r < s.length(); r++) {
+        last[s.charAt(r) - 'a'] = r;
+        // every start up to the oldest last-seen index is valid
+        count += 1 + Math.min(last[0], Math.min(last[1], last[2]));
+    }
+    return count;
+}`},
+{t:"Binary Subarrays With Sum",g:"Counting subarrays",
+s:"Count subarrays of a 0/1 array whose sum equals goal.",
+h:["Exactly goal = (at most goal) − (at most goal − 1).","In atMost, for each right edge every start from l to r forms a valid subarray, so add r − l + 1."],
+cx:"O(n), O(1)",
+c:`static int numSubarraysWithSum(int[] nums, int goal) {
+    return atMost(nums, goal) - atMost(nums, goal - 1);
+}
+// number of subarrays with sum at most k
+static int atMost(int[] nums, int k) {
+    if (k < 0) return 0;
+    int l = 0, sum = 0, count = 0;
+    for (int r = 0; r < nums.length; r++) {
+        sum += nums[r];
+        while (sum > k) sum -= nums[l++];
+        count += r - l + 1;   // all subarrays ending at r
+    }
+    return count;
+}`},
+{t:"Count Number of Nice Subarrays",g:"Counting subarrays",
+s:"Count subarrays that contain exactly k odd numbers.",
+h:["Count odd numbers instead of summing. Same trick: atMost(k) − atMost(k − 1).","The window shrinks while it holds more than k odd numbers."],
+cx:"O(n), O(1)",
+c:`static int numberOfSubarrays(int[] nums, int k) {
+    return atMostOdd(nums, k) - atMostOdd(nums, k - 1);
+}
+static int atMostOdd(int[] nums, int k) {
+    if (k < 0) return 0;
+    int l = 0, odds = 0, count = 0;
+    for (int r = 0; r < nums.length; r++) {
+        odds += nums[r] % 2;
+        while (odds > k) odds -= nums[l++] % 2;
+        count += r - l + 1;
+    }
+    return count;
+}`},
+{t:"Subarrays with K Different Integers",g:"Counting subarrays",
+s:"Count subarrays with exactly k distinct integers.",
+h:["Same trick: atMostDistinct(k) − atMostDistinct(k − 1).","Use a frequency map. Shrink while the number of distinct values exceeds k."],
+cx:"O(n), O(k)",
+c:`static int subarraysWithKDistinct(int[] nums, int k) {
+    return atMostDistinct(nums, k) - atMostDistinct(nums, k - 1);
+}
+static int atMostDistinct(int[] nums, int k) {
+    Map<Integer, Integer> freq = new HashMap<>();
+    int l = 0, count = 0;
+    for (int r = 0; r < nums.length; r++) {
+        freq.merge(nums[r], 1, Integer::sum);
+        while (freq.size() > k) {
+            int x = nums[l++];
+            if (freq.merge(x, -1, Integer::sum) == 0) freq.remove(x);
+        }
+        count += r - l + 1;
+    }
+    return count;
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|break)\b|\b(int|long|double|boolean|char|void|true|false|List|String|Map|HashMap|Integer|Character)\b|\b(\d+)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+const KEY="window-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+esc(p.s)+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p></div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>

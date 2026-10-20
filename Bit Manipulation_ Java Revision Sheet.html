@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bit Manipulation: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+</style></head>
+<body><main>
+<h1>Bit Manipulation: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Bit Manipulation section (all 14 problems). Open a card after trying the problem from memory.</p>
+<section class="tpl">
+<h2>Four identities that solve most of these</h2>
+<p><b>x ^ x = 0</b> and <b>x ^ 0 = x</b>, so XOR cancels pairs. <b>n &amp; (n − 1)</b> removes the lowest set bit. <b>n &amp; −n</b> keeps only the lowest set bit. <b>1 &lt;&lt; i</b> is a mask with just bit i set. Bits are numbered from 0 at the right.</p>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const P=[
+{t:"Introduction to Bits and Tricks",g:"Theory",
+s:"The operators and the standard one-line tricks.",
+h:["AND (&) keeps bits set in both, OR (|) keeps bits set in either, XOR (^) keeps bits that differ, NOT (~) flips all bits.","Left shift (<<) multiplies by 2 per step, right shift (>>) divides by 2 per step.","Learn these six patterns by heart. Every other problem reuses them."],
+cx:"All O(1)",
+c:`// get bit i
+int bit = (n >> i) & 1;
+// set bit i
+n = n | (1 << i);
+// clear bit i
+n = n & ~(1 << i);
+// toggle bit i
+n = n ^ (1 << i);
+// clear the lowest set bit
+n = n & (n - 1);
+// keep only the lowest set bit
+int low = n & -n;`},
+{t:"Check if the i-th Bit Is Set",g:"Fundamentals",
+s:"Is bit i of n equal to 1? (Bit 0 is the rightmost.)",
+h:["Shift n right by i so bit i lands in position 0, then AND with 1.","Alternative: n & (1 << i) is non-zero when the bit is set."],
+cx:"O(1)",
+c:`static boolean isBitSet(int n, int i) {
+    return ((n >> i) & 1) == 1;
+}`},
+{t:"Check if a Number Is Odd",g:"Fundamentals",
+s:"Is n odd?",
+h:["A number is odd exactly when its lowest bit is 1."],
+cx:"O(1)",
+c:`static boolean isOdd(int n) {
+    return (n & 1) == 1;
+}`},
+{t:"Check if a Number Is a Power of 2",g:"Fundamentals",
+s:"Is n a power of two?",
+h:["A power of two has exactly one set bit, such as 1000.","n & (n − 1) removes that single bit and leaves 0.","Also require n > 0, since 0 and negatives are not powers of two."],
+cx:"O(1)",
+c:`static boolean isPowerOfTwo(int n) {
+    return n > 0 && (n & (n - 1)) == 0;
+}`},
+{t:"Count the Number of Set Bits",g:"Fundamentals",
+s:"How many 1 bits does n have?",
+h:["Brian Kernighan’s trick: n & (n − 1) removes one set bit per step.","Count the steps until n is 0. This runs once per set bit, not once per bit position."],
+cx:"O(number of set bits)",
+c:`static int countSetBits(int n) {
+    int count = 0;
+    while (n != 0) {
+        n = n & (n - 1);   // drop the lowest set bit
+        count++;
+    }
+    return count;
+}`},
+{t:"Set the Rightmost Unset Bit",g:"Fundamentals",
+s:"Turn the lowest 0 bit of n into 1.",
+h:["Adding 1 flips the trailing 1s to 0 and turns the lowest 0 into 1.","OR with the original keeps the old bits and adds that new one: n | (n + 1).","If every bit is already 1 (like 111), nothing changes. Check your problem statement for this case."],
+cx:"O(1)",
+c:`static int setRightmostUnsetBit(int n) {
+    // all bits already set, e.g. 7 = 111
+    if (n != 0 && (n & (n + 1)) == 0) return n;
+    return n | (n + 1);
+}`},
+{t:"Swap Two Numbers",g:"Fundamentals",
+s:"Swap a and b without a temporary variable.",
+h:["XOR three times: a ^= b, then b ^= a, then a ^= b.","After step 2, b holds the old a. After step 3, a holds the old b."],
+cx:"O(1)",
+c:`static int[] swap(int a, int b) {
+    a = a ^ b;
+    b = a ^ b;   // b is now the old a
+    a = a ^ b;   // a is now the old b
+    return new int[]{a, b};
+}`},
+{t:"Minimum Bit Flips to Convert a Number",g:"Problems",
+s:"How many bits must be flipped to turn start into goal?",
+h:["XOR of the two numbers has a 1 exactly where the bits differ.","The answer is the number of set bits in start ^ goal."],
+cx:"O(number of set bits)",
+c:`static int minBitFlips(int start, int goal) {
+    int diff = start ^ goal;
+    int count = 0;
+    while (diff != 0) {
+        diff = diff & (diff - 1);
+        count++;
+    }
+    return count;
+}`},
+{t:"Single Number I",g:"Single number",
+s:"Every element appears twice except one. Find it.",
+h:["XOR all elements. Equal pairs cancel to 0, leaving the single one."],
+cx:"O(n) time, O(1) space",
+c:`static int singleNumber(int[] nums) {
+    int xor = 0;
+    for (int x : nums) xor ^= x;
+    return xor;
+}`},
+{t:"Single Number II",g:"Single number",
+s:"Every element appears three times except one, which appears once. Find it.",
+h:["XOR no longer works, because three equal numbers do not cancel.","Track, for each bit, how many times it was seen modulo 3, using two variables: ones (count 1) and twos (count 2).","A bit seen three times resets to zero in both. What is left in ones is the single number."],
+cx:"O(n) time, O(1) space",
+c:`static int singleNumberII(int[] nums) {
+    int ones = 0, twos = 0;
+    for (int x : nums) {
+        ones = (ones ^ x) & ~twos;   // bits seen once so far
+        twos = (twos ^ x) & ~ones;   // bits seen twice so far
+    }
+    return ones;
+}`},
+{t:"Single Number III",g:"Single number",
+s:"Every element appears twice except two different ones. Find both.",
+h:["XOR everything to get a ^ b, since the pairs cancel.","Pick any set bit of a ^ b. The two answers differ at that bit.","Split the numbers by that bit and XOR each group. Each group cancels its pairs and leaves one answer."],
+cx:"O(n) time, O(1) space",
+c:`static int[] singleNumberIII(int[] nums) {
+    int xor = 0;
+    for (int x : nums) xor ^= x;       // a ^ b
+    int diff = xor & -xor;             // a bit where a and b differ
+    int a = 0, b = 0;
+    for (int x : nums) {
+        if ((x & diff) != 0) a ^= x;
+        else b ^= x;
+    }
+    return new int[]{a, b};
+}`},
+{t:"Divide Two Numbers Without * or /",g:"Problems",
+s:"Divide dividend by divisor, truncating toward zero, without multiplication, division or modulo.",
+h:["Any quotient is a sum of powers of two times the divisor.","Repeatedly find the largest shift where (divisor << shift) fits in what is left, subtract it, and add 2^shift to the answer.","Use long to avoid overflow. The one overflow case is MIN_VALUE / −1, which returns MAX_VALUE."],
+cx:"O(log² n)",
+c:`static int divide(int dividend, int divisor) {
+    if (dividend == Integer.MIN_VALUE && divisor == -1)
+        return Integer.MAX_VALUE;
+    boolean negative = (dividend < 0) != (divisor < 0);
+    long a = Math.abs((long) dividend);
+    long b = Math.abs((long) divisor);
+    long result = 0;
+    while (a >= b) {
+        int shift = 0;
+        // largest shift where (b << shift) still fits
+        while (a >= (b << (shift + 1))) shift++;
+        a -= b << shift;
+        result += 1L << shift;
+    }
+    return negative ? (int) -result : (int) result;
+}`},
+{t:"Power Set Using Bit Manipulation",g:"Problems",
+s:"Return every subset of an array.",
+h:["With n elements there are 2^n subsets. Each number from 0 to 2^n − 1 is a mask.","If bit i of the mask is 1, include nums[i] in that subset."],
+cx:"O(n × 2^n)",
+c:`static List<List<Integer>> powerSet(int[] nums) {
+    int n = nums.length;
+    List<List<Integer>> res = new ArrayList<>();
+    for (int mask = 0; mask < (1 << n); mask++) {
+        List<Integer> subset = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            if (((mask >> i) & 1) == 1) subset.add(nums[i]);
+        }
+        res.add(subset);
+    }
+    return res;
+}`},
+{t:"XOR of Numbers in a Range",g:"Problems",
+s:"Find L ^ (L+1) ^ ... ^ R.",
+h:["The XOR from 1 to n follows a pattern with period 4: n, 1, n + 1, 0 for n mod 4 = 0, 1, 2, 3.","XOR of the range = (XOR up to R) ^ (XOR up to L − 1), because the shared prefix cancels."],
+cx:"O(1)",
+c:`static int xorUpTo(int n) {
+    switch (n % 4) {
+        case 0: return n;
+        case 1: return 1;
+        case 2: return n + 1;
+        default: return 0;
+    }
+}
+static int xorRange(int l, int r) {
+    return xorUpTo(r) ^ xorUpTo(l - 1);
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|switch|case|default)\b|\b(int|long|boolean|void|true|false|List|ArrayList)\b|\b(\d+)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+const KEY="bit-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+p.s+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p></div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>

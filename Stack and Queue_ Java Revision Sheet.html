@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stack and Queue: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+</style></head>
+<body><main>
+<h1>Stack and Queue: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Stack / Queues section (all 31 problems).</p>
+<section class="tpl">
+<h2>The pattern: monotonic stack</h2>
+<p>For “next greater / smaller element” problems, keep a stack whose values stay in order (all decreasing, or all increasing). When a new element breaks the order, pop the elements it beats. Each element is pushed and popped once, so the whole scan is O(n).</p>
+<p><b>Spot it:</b> “for each element, find the nearest element to the left or right that is bigger or smaller”, or “count subarrays where this element is the minimum or maximum”.</p>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const P=[
+{t:"Implementation Using Different Data Structures (Theory)",g:"Implementation",
+s:"What a stack and a queue promise, and the Java classes you use in practice.",
+h:["Stack is LIFO: the last element pushed is the first popped. Queue is FIFO: the first element in is the first out.","Both can sit on top of an array (fast, fixed size) or a linked list (no size limit).","In Java, use ArrayDeque for both. The old Stack class is synchronised and slower."],
+cx:"All operations O(1)",
+c:`Deque<Integer> stack = new ArrayDeque<>();
+stack.push(5);          // add on top
+int top = stack.peek(); // look at the top
+stack.pop();            // remove the top
+
+Queue<Integer> queue = new ArrayDeque<>();
+queue.offer(5);         // add at the back
+int front = queue.peek();
+queue.poll();           // remove from the front`},
+{t:"Implement Stack Using Arrays",g:"Implementation",
+s:"Build a stack with push, pop, peek and isEmpty on a fixed-size array.",
+h:["Keep an index top, starting at −1 for an empty stack.","Push: increase top, then store. Pop: read, then decrease top. Check overflow and underflow."],
+cx:"O(1) per operation",
+c:`class ArrayStack {
+    private int[] data;
+    private int top = -1;
+    ArrayStack(int capacity) { data = new int[capacity]; }
+    void push(int x) {
+        if (top == data.length - 1) throw new RuntimeException("Overflow");
+        data[++top] = x;
+    }
+    int pop() {
+        if (top == -1) throw new RuntimeException("Underflow");
+        return data[top--];
+    }
+    int peek() {
+        if (top == -1) throw new RuntimeException("Empty");
+        return data[top];
+    }
+    boolean isEmpty() { return top == -1; }
+}`},
+{t:"Implement Queue Using Arrays",g:"Implementation",
+s:"Build a queue on a fixed-size array without wasting freed space.",
+h:["Use a circular buffer. Keep head (front index) and size.","The next free slot is (head + size) % capacity. Popping moves head forward with the same wrap-around."],
+cx:"O(1) per operation",
+c:`class ArrayQueue {
+    private int[] data;
+    private int head = 0, size = 0;
+    ArrayQueue(int capacity) { data = new int[capacity]; }
+    void push(int x) {
+        if (size == data.length) throw new RuntimeException("Full");
+        data[(head + size) % data.length] = x;
+        size++;
+    }
+    int pop() {
+        if (size == 0) throw new RuntimeException("Empty");
+        int x = data[head];
+        head = (head + 1) % data.length;   // wrap around
+        size--;
+        return x;
+    }
+    int peek() {
+        if (size == 0) throw new RuntimeException("Empty");
+        return data[head];
+    }
+}`},
+{t:"Implement Stack Using Queue",g:"Implementation",
+s:"Build a stack using only queue operations.",
+h:["Use one queue. After adding the new element at the back, rotate the older elements behind it, so the newest ends up at the front.","Then pop and peek are plain queue operations. Push costs O(n)."],
+cx:"Push O(n), pop and top O(1)",
+c:`class StackUsingQueue {
+    private Queue<Integer> q = new LinkedList<>();
+    void push(int x) {
+        q.offer(x);
+        // move every older element behind the new one
+        for (int i = 0; i < q.size() - 1; i++) q.offer(q.poll());
+    }
+    int pop() { return q.poll(); }
+    int top() { return q.peek(); }
+    boolean empty() { return q.isEmpty(); }
+}`},
+{t:"Implement Queue Using Stack",g:"Implementation",
+s:"Build a queue using only stack operations.",
+h:["Use two stacks: in (for pushes) and out (for pops).","When out is empty, pour everything from in into out. This reverses the order, so the oldest element is on top.","Each element moves at most once, so the cost is amortised O(1)."],
+cx:"Amortised O(1) per operation",
+c:`class QueueUsingStack {
+    private Deque<Integer> in = new ArrayDeque<>();
+    private Deque<Integer> out = new ArrayDeque<>();
+    void push(int x) { in.push(x); }
+    int pop() {
+        shift();
+        return out.pop();
+    }
+    int peek() {
+        shift();
+        return out.peek();
+    }
+    boolean empty() { return in.isEmpty() && out.isEmpty(); }
+    // move elements across only when out has run dry
+    private void shift() {
+        if (out.isEmpty())
+            while (!in.isEmpty()) out.push(in.pop());
+    }
+}`},
+{t:"Implement Stack Using Linked List",g:"Implementation",
+s:"Build a stack with no fixed size, using nodes.",
+h:["Make the head of the list the top of the stack.","Push: new node points at the old top and becomes the top. Pop: move top to top.next."],
+cx:"O(1) per operation",
+c:`class LinkedStack {
+    private static class Node {
+        int val;
+        Node next;
+        Node(int v, Node n) { val = v; next = n; }
+    }
+    private Node top;
+    void push(int x) { top = new Node(x, top); }
+    int pop() {
+        int v = top.val;
+        top = top.next;
+        return v;
+    }
+    int peek() { return top.val; }
+    boolean isEmpty() { return top == null; }
+}`},
+{t:"Implement Queue Using Linked List",g:"Implementation",
+s:"Build a queue with no fixed size, using nodes.",
+h:["Keep head (front) and tail (back) pointers.","Push appends at tail. Pop removes at head. When the queue becomes empty, reset tail to null too."],
+cx:"O(1) per operation",
+c:`class LinkedQueue {
+    private static class Node {
+        int val;
+        Node next;
+        Node(int v) { val = v; }
+    }
+    private Node head, tail;
+    void push(int x) {
+        Node node = new Node(x);
+        if (tail == null) head = tail = node;
+        else {
+            tail.next = node;
+            tail = node;
+        }
+    }
+    int pop() {
+        int v = head.val;
+        head = head.next;
+        if (head == null) tail = null;
+        return v;
+    }
+    int peek() { return head.val; }
+}`},
+{t:"Balanced Parenthesis",g:"Implementation",
+s:"Check that every bracket in the string is closed in the right order.",
+h:["Push every opening bracket.","On a closing bracket, the top of the stack must be its matching opener. Otherwise the string is invalid.","At the end the stack must be empty."],
+cx:"O(n), O(n)",
+c:`static boolean isValid(String s) {
+    Deque<Character> stack = new ArrayDeque<>();
+    for (char c : s.toCharArray()) {
+        if (c == '(' || c == '[' || c == '{') {
+            stack.push(c);
+        } else {
+            if (stack.isEmpty()) return false;
+            char open = stack.pop();
+            if ((c == ')' && open != '(')
+             || (c == ']' && open != '[')
+             || (c == '}' && open != '{')) return false;
+        }
+    }
+    return stack.isEmpty();
+}`},
+{t:"Next Greater Element",g:"Monotonic stack",
+s:"For each number in nums1 (a subset of nums2), find the next greater number to its right in nums2, or −1.",
+h:["Scan nums2 from right to left with a stack of candidates.","Pop every stack value that is not greater than the current number, since it can never be the answer for anything further left.","The top that remains is the answer. Save it in a map, then push the current number."],
+cx:"O(n + m)",
+c:`static int[] nextGreaterElement(int[] nums1, int[] nums2) {
+    Map<Integer, Integer> next = new HashMap<>();
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = nums2.length - 1; i >= 0; i--) {
+        while (!stack.isEmpty() && stack.peek() <= nums2[i]) stack.pop();
+        next.put(nums2[i], stack.isEmpty() ? -1 : stack.peek());
+        stack.push(nums2[i]);
+    }
+    int[] res = new int[nums1.length];
+    for (int i = 0; i < nums1.length; i++) res[i] = next.get(nums1[i]);
+    return res;
+}`},
+{t:"Next Greater Element II",g:"Monotonic stack",
+s:"The array is circular. For each element, find the next greater element, wrapping around.",
+h:["Imagine the array written twice. Scan indices 2n − 1 down to 0, using i % n as the element.","Only record answers for the first copy (i < n)."],
+cx:"O(n)",
+c:`static int[] nextGreaterElements(int[] nums) {
+    int n = nums.length;
+    int[] res = new int[n];
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = 2 * n - 1; i >= 0; i--) {
+        int x = nums[i % n];
+        while (!stack.isEmpty() && stack.peek() <= x) stack.pop();
+        if (i < n) res[i] = stack.isEmpty() ? -1 : stack.peek();
+        stack.push(x);
+    }
+    return res;
+}`},
+{t:"Asteroid Collision",g:"Monotonic stack",
+s:"Positive values move right, negative move left, and the absolute value is the size. Smaller asteroids explode on collision, equal ones both explode. Return the survivors.",
+h:["Only a left-moving asteroid hitting a right-moving one on the stack can collide.","While that holds: a smaller stack top explodes (pop and keep checking), an equal one means both go, a bigger one destroys the new asteroid.","If the new asteroid survives, push it."],
+cx:"O(n)",
+c:`static int[] asteroidCollision(int[] ast) {
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int a : ast) {
+        boolean alive = true;
+        while (alive && a < 0 && !stack.isEmpty() && stack.peek() > 0) {
+            if (stack.peek() < -a) {
+                stack.pop();               // top explodes, keep checking
+            } else if (stack.peek() == -a) {
+                stack.pop();               // both explode
+                alive = false;
+            } else {
+                alive = false;             // the new asteroid explodes
+            }
+        }
+        if (alive) stack.push(a);
+    }
+    int[] res = new int[stack.size()];
+    for (int i = res.length - 1; i >= 0; i--) res[i] = stack.pop();
+    return res;
+}`},
+{t:"Sum of Subarray Minimums",g:"Monotonic stack",
+s:"Sum the minimum of every subarray, modulo 1e9 + 7.",
+h:["Count how many subarrays have arr[i] as their minimum: (choices of left end) × (choices of right end).","left[i] = distance to the previous strictly smaller element. right[i] = distance to the next smaller-or-equal element. Using strict on one side and non-strict on the other stops ties being counted twice.","Contribution = arr[i] × left[i] × right[i]."],
+cx:"O(n), O(n)",
+c:`static int sumSubarrayMins(int[] arr) {
+    int n = arr.length;
+    long mod = 1_000_000_007L, total = 0;
+    int[] left = new int[n], right = new int[n];
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = 0; i < n; i++) {            // previous strictly smaller
+        while (!stack.isEmpty() && arr[stack.peek()] >= arr[i]) stack.pop();
+        left[i] = stack.isEmpty() ? i + 1 : i - stack.peek();
+        stack.push(i);
+    }
+    stack.clear();
+    for (int i = n - 1; i >= 0; i--) {       // next smaller or equal
+        while (!stack.isEmpty() && arr[stack.peek()] > arr[i]) stack.pop();
+        right[i] = stack.isEmpty() ? n - i : stack.peek() - i;
+        stack.push(i);
+    }
+    for (int i = 0; i < n; i++)
+        total = (total + (long) arr[i] * left[i] % mod * right[i]) % mod;
+    return (int) total;
+}`},
+{t:"Sum of Subarray Ranges",g:"Monotonic stack",
+s:"The range of a subarray is max − min. Sum the range of every subarray.",
+h:["Sum of ranges = (sum of all subarray maximums) − (sum of all subarray minimums).","Minimums use the same stack method as the previous card, without the modulo.","For maximums, negate the array: the minimum of the negated array is the negated maximum."],
+cx:"O(n), O(n)",
+c:`static long sumSubarrayRanges(int[] nums) {
+    return sumOfMax(nums) - sumOfMin(nums);
+}
+static long sumOfMax(int[] a) {
+    int[] neg = new int[a.length];
+    for (int i = 0; i < a.length; i++) neg[i] = -a[i];
+    return -sumOfMin(neg);   // max of a = -(min of -a)
+}
+static long sumOfMin(int[] a) {
+    int n = a.length;
+    long total = 0;
+    int[] left = new int[n], right = new int[n];
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = 0; i < n; i++) {
+        while (!stack.isEmpty() && a[stack.peek()] >= a[i]) stack.pop();
+        left[i] = stack.isEmpty() ? i + 1 : i - stack.peek();
+        stack.push(i);
+    }
+    stack.clear();
+    for (int i = n - 1; i >= 0; i--) {
+        while (!stack.isEmpty() && a[stack.peek()] > a[i]) stack.pop();
+        right[i] = stack.isEmpty() ? n - i : stack.peek() - i;
+        stack.push(i);
+    }
+    for (int i = 0; i < n; i++) total += (long) a[i] * left[i] * right[i];
+    return total;
+}`},
+{t:"Remove K Digits",g:"Monotonic stack",
+s:"Remove exactly k digits from a number string to make the smallest possible number.",
+h:["Scan left to right keeping the digits in non-decreasing order. When a digit is smaller than the one before it, remove the bigger earlier digit (while you still have removals left).","If removals remain at the end, trim from the right, since the digits are already ascending.","Strip leading zeros. An empty result becomes 0."],
+cx:"O(n)",
+c:`static String removeKdigits(String num, int k) {
+    StringBuilder sb = new StringBuilder();   // acts as the stack
+    for (char c : num.toCharArray()) {
+        while (k > 0 && sb.length() > 0 && sb.charAt(sb.length() - 1) > c) {
+            sb.deleteCharAt(sb.length() - 1); // bigger digit before a smaller one
+            k--;
+        }
+        sb.append(c);
+    }
+    sb.setLength(sb.length() - k);            // leftover removals from the end
+    int i = 0;
+    while (i < sb.length() && sb.charAt(i) == '0') i++;   // leading zeros
+    String res = sb.substring(i);
+    return res.isEmpty() ? "0" : res;
+}`},
+{t:"Next Smaller Element",g:"Monotonic stack",
+s:"For each element, find the next smaller element to its right, or −1.",
+h:["Mirror image of Next Greater Element.","Scan from the right. Pop stack values that are greater than or equal to the current one. The top that remains is the answer."],
+cx:"O(n)",
+c:`static int[] nextSmaller(int[] a) {
+    int n = a.length;
+    int[] res = new int[n];
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = n - 1; i >= 0; i--) {
+        while (!stack.isEmpty() && stack.peek() >= a[i]) stack.pop();
+        res[i] = stack.isEmpty() ? -1 : stack.peek();
+        stack.push(a[i]);
+    }
+    return res;
+}`},
+{t:"Infix to Postfix Conversion",g:"Conversions",
+s:"Convert an infix expression like a+b*c to postfix (abc*+).",
+h:["Operands go straight to the output. Operators wait on a stack. A higher-precedence operator on the stack is output before a new lower one.","For equal precedence, pop for left-associative operators (+ - * /) but not for ^, which is right-associative. Brackets act as barriers."],
+cx:"O(n)",
+c:`static int prec(char c) {
+    if (c == '^') return 3;
+    if (c == '*' || c == '/') return 2;
+    if (c == '+' || c == '-') return 1;
+    return -1;
+}
+static String convert(String s, boolean forPrefix) {
+    StringBuilder out = new StringBuilder();
+    Deque<Character> st = new ArrayDeque<>();
+    for (char c : s.toCharArray()) {
+        if (Character.isLetterOrDigit(c)) {
+            out.append(c);
+        } else if (c == '(') {
+            st.push(c);
+        } else if (c == ')') {
+            while (st.peek() != '(') out.append(st.pop());
+            st.pop();
+        } else {
+            while (!st.isEmpty() && st.peek() != '(') {
+                int top = prec(st.peek()), cur = prec(c);
+                boolean popIt = top > cur
+                    || (top == cur && (forPrefix ? c == '^' : c != '^'));
+                if (!popIt) break;
+                out.append(st.pop());
+            }
+            st.push(c);
+        }
+    }
+    while (!st.isEmpty()) out.append(st.pop());
+    return out.toString();
+}
+static String infixToPostfix(String s) {
+    return convert(s, false);
+}`},
+{t:"Infix to Prefix Conversion",g:"Conversions",
+s:"Convert infix to prefix, e.g. a+b*c becomes +a*bc.",
+h:["Reverse the expression and swap each ( with ). Run the postfix routine on it, then reverse the result.","Reversal flips associativity, so equal-precedence operators are popped only for ^. That is the forPrefix flag in the helper from the previous card."],
+cx:"O(n)",
+c:`static String infixToPrefix(String s) {
+    StringBuilder rev = new StringBuilder();
+    for (int i = s.length() - 1; i >= 0; i--) {
+        char c = s.charAt(i);
+        rev.append(c == '(' ? ')' : c == ')' ? '(' : c);   // reverse and swap brackets
+    }
+    String postfix = convert(rev.toString(), true);
+    return new StringBuilder(postfix).reverse().toString();
+}`},
+{t:"Prefix to Infix Conversion",g:"Conversions",
+s:"Convert a prefix expression to a fully bracketed infix one.",
+h:["Scan from right to left. Push operands. For an operator, pop two: the first popped is the left operand and the second is the right.","Push (left operator right) back as one string."],
+cx:"O(n)",
+c:`static String prefixToInfix(String s) {
+    Deque<String> st = new ArrayDeque<>();
+    for (int i = s.length() - 1; i >= 0; i--) {
+        char c = s.charAt(i);
+        if (Character.isLetterOrDigit(c)) {
+            st.push(String.valueOf(c));
+        } else {
+            String a = st.pop(), b = st.pop();   // a is the left operand
+            st.push("(" + a + c + b + ")");
+        }
+    }
+    return st.pop();
+}`},
+{t:"Prefix to Postfix Conversion",g:"Conversions",
+s:"Convert a prefix expression to postfix.",
+h:["Same scan as prefix to infix, but combine as left + right + operator."],
+cx:"O(n)",
+c:`static String prefixToPostfix(String s) {
+    Deque<String> st = new ArrayDeque<>();
+    for (int i = s.length() - 1; i >= 0; i--) {
+        char c = s.charAt(i);
+        if (Character.isLetterOrDigit(c)) {
+            st.push(String.valueOf(c));
+        } else {
+            String a = st.pop(), b = st.pop();   // a is the left operand
+            st.push(a + b + c);
+        }
+    }
+    return st.pop();
+}`},
+{t:"Postfix to Infix Conversion",g:"Conversions",
+s:"Convert a postfix expression to a fully bracketed infix one.",
+h:["Scan left to right. Push operands. For an operator, pop two: the first popped is the right operand, the second is the left.","Push (left operator right) back."],
+cx:"O(n)",
+c:`static String postfixToInfix(String s) {
+    Deque<String> st = new ArrayDeque<>();
+    for (char c : s.toCharArray()) {
+        if (Character.isLetterOrDigit(c)) {
+            st.push(String.valueOf(c));
+        } else {
+            String b = st.pop(), a = st.pop();   // b is the right operand
+            st.push("(" + a + c + b + ")");
+        }
+    }
+    return st.pop();
+}`},
+{t:"Postfix to Prefix Conversion",g:"Conversions",
+s:"Convert a postfix expression to prefix.",
+h:["Same scan as postfix to infix, but combine as operator + left + right."],
+cx:"O(n)",
+c:`static String postfixToPrefix(String s) {
+    Deque<String> st = new ArrayDeque<>();
+    for (char c : s.toCharArray()) {
+        if (Character.isLetterOrDigit(c)) {
+            st.push(String.valueOf(c));
+        } else {
+            String b = st.pop(), a = st.pop();   // b is the right operand
+            st.push(c + a + b);
+        }
+    }
+    return st.pop();
+}`},
+{t:"Implement Min Stack",g:"FAQs",
+s:"A stack with push, pop, top and getMin, all in O(1).",
+h:["Store with each value the minimum of the stack up to that point.","Popping discards both, so the previous minimum is automatically restored."],
+cx:"O(1) per operation, O(n) space",
+c:`class MinStack {
+    private Deque<int[]> st = new ArrayDeque<>();   // {value, min so far}
+    void push(int x) {
+        int min = st.isEmpty() ? x : Math.min(x, st.peek()[1]);
+        st.push(new int[]{x, min});
+    }
+    void pop() { st.pop(); }
+    int top() { return st.peek()[0]; }
+    int getMin() { return st.peek()[1]; }
+}`},
+{t:"Sliding Window Maximum",g:"FAQs",
+s:"Return the maximum of every window of size k.",
+h:["Keep a deque of indices whose values are in decreasing order. The front is always the window maximum.","For each new element: drop the front if it left the window, drop back elements that are not bigger than the new one, then add the new index."],
+cx:"O(n)",
+c:`static int[] maxSlidingWindow(int[] nums, int k) {
+    int n = nums.length;
+    int[] res = new int[n - k + 1];
+    Deque<Integer> dq = new ArrayDeque<>();   // indices, values decreasing
+    for (int i = 0; i < n; i++) {
+        if (!dq.isEmpty() && dq.peekFirst() <= i - k) dq.pollFirst();   // left the window
+        while (!dq.isEmpty() && nums[dq.peekLast()] <= nums[i]) dq.pollLast();
+        dq.offerLast(i);
+        if (i >= k - 1) res[i - k + 1] = nums[dq.peekFirst()];
+    }
+    return res;
+}`},
+{t:"Trapping Rainwater",g:"FAQs",
+s:"Given bar heights, how much water is trapped after rain?",
+h:["Water above a bar = min(tallest on its left, tallest on its right) \u2212 its height.","Two pointers: move the side with the smaller bar. That side\u2019s own running maximum is the limit, because the other side is at least as tall."],
+cx:"O(n), O(1)",
+c:`static int trap(int[] h) {
+    int l = 0, r = h.length - 1;
+    int leftMax = 0, rightMax = 0, water = 0;
+    while (l < r) {
+        if (h[l] < h[r]) {
+            leftMax = Math.max(leftMax, h[l]);
+            water += leftMax - h[l];
+            l++;
+        } else {
+            rightMax = Math.max(rightMax, h[r]);
+            water += rightMax - h[r];
+            r--;
+        }
+    }
+    return water;
+}`},
+{t:"Largest Rectangle in a Histogram",g:"FAQs",
+s:"Find the area of the largest rectangle in a histogram.",
+h:["Keep a stack of indices with increasing heights. When a bar is lower than the top, the top bar\u2019s rectangle ends here.","Its width runs from the index after the new stack top to the current index minus 1.","A final bar of height 0 flushes the stack."],
+cx:"O(n)",
+c:`static int largestRectangleArea(int[] h) {
+    int n = h.length, best = 0;
+    Deque<Integer> st = new ArrayDeque<>();   // indices, heights increasing
+    for (int i = 0; i <= n; i++) {
+        int cur = (i == n) ? 0 : h[i];        // 0 at the end flushes the stack
+        while (!st.isEmpty() && h[st.peek()] >= cur) {
+            int height = h[st.pop()];
+            int left = st.isEmpty() ? -1 : st.peek();
+            best = Math.max(best, height * (i - left - 1));
+        }
+        st.push(i);
+    }
+    return best;
+}`},
+{t:"Maximum Rectangles (Maximal Rectangle)",g:"FAQs",
+s:"Find the largest rectangle of 1s in a binary matrix.",
+h:["Treat each row as the base of a histogram: the height of a column is the count of consecutive 1s ending at that row.","Run Largest Rectangle in a Histogram on every row and keep the best."],
+cx:"O(rows \u00d7 cols)",
+c:`static int maximalRectangle(char[][] matrix) {
+    if (matrix.length == 0) return 0;
+    int m = matrix[0].length, best = 0;
+    int[] heights = new int[m];
+    for (char[] row : matrix) {
+        for (int j = 0; j < m; j++)
+            heights[j] = row[j] == '1' ? heights[j] + 1 : 0;
+        best = Math.max(best, largestRectangleArea(heights));
+    }
+    return best;
+}`},
+{t:"Stock Span Problem",g:"FAQs",
+s:"For each day, return the number of consecutive days up to and including today with price \u2264 today\u2019s price. Prices arrive one at a time.",
+h:["Keep a stack of (price, span). Pop every earlier price that is \u2264 today\u2019s and add its span to today\u2019s span.","Equivalent to the distance to the previous greater element."],
+cx:"Amortised O(1) per day",
+c:`class StockSpanner {
+    private Deque<int[]> st = new ArrayDeque<>();   // {price, span}
+    int next(int price) {
+        int span = 1;
+        while (!st.isEmpty() && st.peek()[0] <= price)
+            span += st.pop()[1];
+        st.push(new int[]{price, span});
+        return span;
+    }
+}`},
+{t:"Celebrity Problem",g:"FAQs",
+s:"A celebrity is known by everyone and knows no one. M[a][b] = 1 means a knows b. Find the celebrity or return −1.",
+h:["Eliminate in one pass: if the candidate knows i, the candidate cannot be a celebrity, so i becomes the candidate. If not, i cannot be one.","Verify the final candidate: knows nobody, and everyone knows them."],
+cx:"O(n), O(1)",
+c:`static int celebrity(int[][] M) {
+    int n = M.length, candidate = 0;
+    for (int i = 1; i < n; i++)
+        if (M[candidate][i] == 1) candidate = i;
+    for (int i = 0; i < n; i++) {
+        if (i == candidate) continue;
+        if (M[candidate][i] == 1 || M[i][candidate] == 0) return -1;
+    }
+    return candidate;
+}`},
+{t:"LRU Cache",g:"FAQs",
+s:"A cache with a fixed capacity. get and put must be O(1). When full, evict the least recently used key.",
+h:["A hash map finds a node by key in O(1). A doubly linked list keeps keys in usage order: most recent at the front, least recent at the back.","On every get or put, move that node to the front. To evict, remove the node before the tail.","Dummy head and tail nodes remove the edge cases."],
+cx:"O(1) per operation",
+c:`class LRUCache {
+    private class Node {
+        int key, val;
+        Node prev, next;
+        Node(int k, int v) { key = k; val = v; }
+    }
+    private final int capacity;
+    private final Map<Integer, Node> map = new HashMap<>();
+    private final Node head = new Node(0, 0), tail = new Node(0, 0);
+    LRUCache(int capacity) {
+        this.capacity = capacity;
+        head.next = tail;
+        tail.prev = head;
+    }
+    private void remove(Node n) {
+        n.prev.next = n.next;
+        n.next.prev = n.prev;
+    }
+    private void addFront(Node n) {
+        n.next = head.next;
+        n.prev = head;
+        head.next.prev = n;
+        head.next = n;
+    }
+    int get(int key) {
+        Node n = map.get(key);
+        if (n == null) return -1;
+        remove(n);
+        addFront(n);               // now the most recently used
+        return n.val;
+    }
+    void put(int key, int value) {
+        Node n = map.get(key);
+        if (n != null) {
+            n.val = value;
+            remove(n);
+            addFront(n);
+            return;
+        }
+        if (map.size() == capacity) {
+            Node lru = tail.prev;  // least recently used
+            remove(lru);
+            map.remove(lru.key);
+        }
+        n = new Node(key, value);
+        map.put(key, n);
+        addFront(n);
+    }
+}`},
+{t:"LFU Cache",g:"FAQs",
+s:"Like LRU, but evict the least frequently used key. Ties go to the least recently used among them. get and put must be O(1).",
+h:["Map 1: key to {value, frequency}. Map 2: frequency to a LinkedHashSet of keys, kept oldest first.","Track minFreq. Every access moves the key from its frequency set to the next one. If the old set is now empty and was minFreq, minFreq goes up by 1.","To evict, take the first key of the set at minFreq. A new key always resets minFreq to 1."],
+cx:"O(1) per operation",
+c:`class LFUCache {
+    private final int capacity;
+    private int minFreq = 0;
+    private final Map<Integer, int[]> data = new HashMap<>();   // key -> {value, freq}
+    private final Map<Integer, LinkedHashSet<Integer>> byFreq = new HashMap<>();
+    LFUCache(int capacity) { this.capacity = capacity; }
+    private void touch(int key) {
+        int[] e = data.get(key);
+        int f = e[1];
+        byFreq.get(f).remove(key);
+        if (byFreq.get(f).isEmpty()) {
+            byFreq.remove(f);
+            if (minFreq == f) minFreq++;
+        }
+        e[1] = f + 1;
+        byFreq.computeIfAbsent(f + 1, x -> new LinkedHashSet<>()).add(key);
+    }
+    int get(int key) {
+        if (!data.containsKey(key)) return -1;
+        touch(key);
+        return data.get(key)[0];
+    }
+    void put(int key, int value) {
+        if (capacity == 0) return;
+        if (data.containsKey(key)) {
+            data.get(key)[0] = value;
+            touch(key);
+            return;
+        }
+        if (data.size() == capacity) {
+            int old = byFreq.get(minFreq).iterator().next();   // oldest at min freq
+            byFreq.get(minFreq).remove(old);
+            if (byFreq.get(minFreq).isEmpty()) byFreq.remove(minFreq);
+            data.remove(old);
+        }
+        data.put(key, new int[]{value, 1});
+        byFreq.computeIfAbsent(1, x -> new LinkedHashSet<>()).add(key);
+        minFreq = 1;
+    }
+}`},
+{t:"Number of Greater Elements to the Right",g:"FAQs",
+s:"For each query index i, count the elements to the right of i that are greater than arr[i]. (Assumed form: the sheet shows only the title.)",
+h:["Process the array from right to left, inserting each value into a Fenwick tree (BIT) over value ranks.","Before inserting arr[i], the elements already in the tree are exactly those to its right. Greater count = (elements to the right) \u2212 (those with rank \u2264 rank of arr[i]).","Store each answer, then look up the queries. A merge sort count also works."],
+cx:"O((n + q) log n)",
+c:`static int[] countGreaterToRight(int[] arr, int[] queries) {
+    int n = arr.length;
+    int[] sorted = Arrays.stream(arr).distinct().sorted().toArray();
+    int m = sorted.length;
+    int[] bit = new int[m + 2];
+    int[] ansAt = new int[n];
+    for (int i = n - 1; i >= 0; i--) {
+        int rank = Arrays.binarySearch(sorted, arr[i]) + 1;
+        // to the right: (n - 1 - i) elements, of which query(rank) are <= arr[i]
+        ansAt[i] = (n - 1 - i) - query(bit, rank);
+        update(bit, rank, m);
+    }
+    int[] res = new int[queries.length];
+    for (int q = 0; q < queries.length; q++) res[q] = ansAt[queries[q]];
+    return res;
+}
+static void update(int[] bit, int i, int m) {
+    for (; i <= m; i += i & -i) bit[i]++;
+}
+static int query(int[] bit, int i) {
+    int s = 0;
+    for (; i > 0; i -= i & -i) s += bit[i];
+    return s;
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|class|private|final|this|continue|throw|break)\b|\b(int|long|boolean|char|void|true|false|String|StringBuilder|Deque|Queue|Map|HashMap|ArrayDeque|LinkedList|Node|Character|Integer|LinkedHashSet)\b|\b(\d+)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+const KEY="stackq-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+esc(p.s)+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p></div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>

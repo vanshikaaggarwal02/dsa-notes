@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heaps: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+</style></head>
+<body><main>
+<h1>Heaps: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Heaps section (20 problems). Built from the standard list, because the sheet’s Heaps section would not load. Check the titles against your sheet.</p>
+<section class="tpl">
+<h2>The pattern: a heap of size k keeps the k best so far</h2>
+<p>A heap gives you the smallest (or largest) element in O(1) and lets you add or remove one in O(log n). For “k largest” keep a <b>min-heap of size k</b>: when it grows past k, remove the smallest, so what remains is the k largest. For “k smallest” use a <b>max-heap of size k</b>.</p>
+<p>Java’s <code>PriorityQueue</code> is a min-heap. Use <code>new PriorityQueue&lt;&gt;(Collections.reverseOrder())</code> for a max-heap, or pass a comparator for pairs and arrays.</p>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const P=[
+{t:"Introduction to Priority Queues Using a Binary Heap",g:"Learning",
+s:"What a priority queue is, how a binary heap stores it, and how to use Java’s PriorityQueue.",
+h:["A priority queue always gives you the element with the highest priority first (smallest for a min-heap).","A binary heap is a complete binary tree stored in an array. For index i: parent is (i − 1) / 2, left child is 2i + 1, right child is 2i + 2.","Heap property: in a min-heap every parent is ≤ its children. Push and pop cost O(log n), peek costs O(1)."],
+cx:"push/pop O(log n), peek O(1)",
+c:`PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+PriorityQueue<Integer> maxHeap =
+    new PriorityQueue<>(Collections.reverseOrder());
+minHeap.offer(5);              // push
+int smallest = minHeap.peek(); // look at the top
+minHeap.poll();                // remove the top
+
+// heap of pairs, ordered by the first value
+PriorityQueue<int[]> pairs =
+    new PriorityQueue<>((x, y) -> Integer.compare(x[0], y[0]));`},
+{t:"Min Heap and Max Heap Implementation",g:"Learning",
+s:"Build a min-heap from scratch with push, peek and pop.",
+h:["Push: add at the end, then bubble up while the parent is bigger.","Pop: take the root, move the last element to the root, then sift it down by swapping with the smaller child.","A max-heap is the same code with the comparisons flipped."],
+cx:"push/pop O(log n)",
+c:`class MinHeap {
+    private int[] a = new int[16];
+    private int size = 0;
+    void push(int x) {
+        if (size == a.length) a = Arrays.copyOf(a, size * 2);
+        a[size] = x;
+        int i = size++;
+        while (i > 0 && a[(i - 1) / 2] > a[i]) {   // bubble up
+            swap(i, (i - 1) / 2);
+            i = (i - 1) / 2;
+        }
+    }
+    int peek() { return a[0]; }
+    int pop() {
+        int top = a[0];
+        a[0] = a[--size];
+        siftDown(0);
+        return top;
+    }
+    private void siftDown(int i) {
+        while (true) {
+            int smallest = i, l = 2 * i + 1, r = 2 * i + 2;
+            if (l < size && a[l] < a[smallest]) smallest = l;
+            if (r < size && a[r] < a[smallest]) smallest = r;
+            if (smallest == i) return;
+            swap(i, smallest);
+            i = smallest;
+        }
+    }
+    private void swap(int i, int j) {
+        int t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+}`},
+{t:"Heapify and Build Heap",g:"Learning",
+s:"Turn an unordered array into a heap in place.",
+h:["heapify(i) sifts the value at i down until the heap property holds below it.","Leaves are already heaps. So call heapify on each internal node, from the last one (n / 2 − 1) back to 0.","This takes O(n) overall, not O(n log n), because most nodes are near the bottom and sift very little."],
+cx:"O(n)",
+c:`// max-heap version
+static void heapify(int[] a, int n, int i) {
+    int largest = i, l = 2 * i + 1, r = 2 * i + 2;
+    if (l < n && a[l] > a[largest]) largest = l;
+    if (r < n && a[r] > a[largest]) largest = r;
+    if (largest != i) {
+        int t = a[i]; a[i] = a[largest]; a[largest] = t;
+        heapify(a, n, largest);
+    }
+}
+static void buildMaxHeap(int[] a) {
+    for (int i = a.length / 2 - 1; i >= 0; i--)
+        heapify(a, a.length, i);
+}`},
+{t:"Heap Sort",g:"Learning",
+s:"Sort an array in place using a heap.",
+h:["Build a max-heap. The largest value is at index 0.","Swap it with the last element of the heap, shrink the heap by one, and heapify the root. Repeat."],
+cx:"O(n log n) time, O(1) space",
+c:`static void heapSort(int[] a) {
+    int n = a.length;
+    buildMaxHeap(a);                    // from the previous card
+    for (int end = n - 1; end > 0; end--) {
+        int t = a[0]; a[0] = a[end]; a[end] = t;   // max goes to its final place
+        heapify(a, end, 0);                        // heap is now one smaller
+    }
+}`},
+{t:"Check if an Array Represents a Min Heap",g:"Learning",
+s:"Does the array satisfy the min-heap property?",
+h:["Only internal nodes have children. For each, compare with the left child and, if present, the right child.","Every child must be at least as large as its parent."],
+cx:"O(n)",
+c:`static boolean isMinHeap(int[] a) {
+    int n = a.length;
+    for (int i = 0; 2 * i + 1 < n; i++) {    // internal nodes only
+        int l = 2 * i + 1, r = 2 * i + 2;
+        if (a[l] < a[i]) return false;
+        if (r < n && a[r] < a[i]) return false;
+    }
+    return true;
+}`},
+{t:"Convert a Min Heap to a Max Heap",g:"Learning",
+s:"Given an array that is a min-heap, rearrange it into a max-heap.",
+h:["The min-heap order does not help. Ignore it and run Build Heap with max-heap comparisons."],
+cx:"O(n)",
+c:`static void minToMaxHeap(int[] a) {
+    buildMaxHeap(a);     // same routine as Heapify and Build Heap
+}`},
+{t:"Kth Largest Element in an Array",g:"Medium",
+s:"Find the kth largest element (not the kth distinct).",
+h:["Keep a min-heap of size k. Add each number, and if the size passes k, remove the smallest.","After the scan, the heap holds the k largest numbers, and its top is the kth largest."],
+cx:"O(n log k), O(k)",
+c:`static int findKthLargest(int[] nums, int k) {
+    PriorityQueue<Integer> heap = new PriorityQueue<>();   // min-heap
+    for (int x : nums) {
+        heap.offer(x);
+        if (heap.size() > k) heap.poll();   // drop the smallest
+    }
+    return heap.peek();
+}`},
+{t:"Kth Smallest Element in an Array",g:"Medium",
+s:"Find the kth smallest element.",
+h:["Mirror image: keep a max-heap of size k and remove the largest when it grows past k.","The top of the heap at the end is the kth smallest."],
+cx:"O(n log k), O(k)",
+c:`static int findKthSmallest(int[] nums, int k) {
+    PriorityQueue<Integer> heap =
+        new PriorityQueue<>(Collections.reverseOrder());   // max-heap
+    for (int x : nums) {
+        heap.offer(x);
+        if (heap.size() > k) heap.poll();   // drop the largest
+    }
+    return heap.peek();
+}`},
+{t:"Sort a K-Sorted Array",g:"Medium",
+s:"Every element is at most k positions away from its sorted place. Sort the array.",
+h:["The smallest remaining element must be among the next k + 1 elements.","Keep a min-heap of k + 1 elements. Each time it is larger than k, pop the smallest into the next output slot."],
+cx:"O(n log k), O(k)",
+c:`static void sortKSorted(int[] a, int k) {
+    PriorityQueue<Integer> heap = new PriorityQueue<>();
+    int idx = 0;
+    for (int i = 0; i < a.length; i++) {
+        heap.offer(a[i]);
+        if (heap.size() > k) a[idx++] = heap.poll();   // its final position
+    }
+    while (!heap.isEmpty()) a[idx++] = heap.poll();
+}`},
+{t:"Merge K Sorted Arrays",g:"Medium",
+s:"Merge k sorted arrays into one sorted list.",
+h:["Put the first element of every array in a min-heap, along with which array it came from and its index.","Pop the smallest, add it to the result, and push the next element of the same array."],
+cx:"O(N log k) for N total elements",
+c:`static List<Integer> mergeKSorted(int[][] arrays) {
+    // {value, which array, index in that array}
+    PriorityQueue<int[]> heap =
+        new PriorityQueue<>((x, y) -> Integer.compare(x[0], y[0]));
+    for (int i = 0; i < arrays.length; i++)
+        if (arrays[i].length > 0) heap.offer(new int[]{arrays[i][0], i, 0});
+    List<Integer> res = new ArrayList<>();
+    while (!heap.isEmpty()) {
+        int[] top = heap.poll();
+        res.add(top[0]);
+        int next = top[2] + 1;
+        if (next < arrays[top[1]].length)
+            heap.offer(new int[]{arrays[top[1]][next], top[1], next});
+    }
+    return res;
+}`},
+{t:"Replace Each Array Element by Its Rank",g:"Medium",
+s:"Replace every element with its rank: the smallest value gets 1, equal values share a rank.",
+h:["Sort a copy, then give each distinct value the next rank in order.","A heap does the same job (popping values in sorted order), but a sort is simpler to write."],
+cx:"O(n log n)",
+c:`static int[] replaceWithRank(int[] arr) {
+    int[] sorted = arr.clone();
+    Arrays.sort(sorted);
+    Map<Integer, Integer> rank = new HashMap<>();
+    int r = 1;
+    for (int x : sorted)
+        if (!rank.containsKey(x)) rank.put(x, r++);
+    int[] res = new int[arr.length];
+    for (int i = 0; i < arr.length; i++) res[i] = rank.get(arr[i]);
+    return res;
+}`},
+{t:"Task Scheduler",g:"Medium",
+s:"Tasks A–Z, one per time unit. The same task needs n units of cooldown between runs. Find the minimum total time (idle time counts).",
+h:["Always run the task with the most remaining copies, using a max-heap of counts.","Work in rounds of n + 1 slots. In each round, run up to n + 1 different tasks, then put them back with one fewer copy.","If tasks remain after a round, the unused slots are idle time."],
+cx:"O(total time × log 26)",
+c:`static int leastInterval(char[] tasks, int n) {
+    int[] freq = new int[26];
+    for (char c : tasks) freq[c - 'A']++;
+    PriorityQueue<Integer> heap =
+        new PriorityQueue<>(Collections.reverseOrder());
+    for (int f : freq) if (f > 0) heap.offer(f);
+    int time = 0;
+    while (!heap.isEmpty()) {
+        List<Integer> used = new ArrayList<>();
+        int cycle = n + 1;                      // slots in one round
+        while (cycle > 0 && !heap.isEmpty()) {
+            int f = heap.poll();
+            if (f > 1) used.add(f - 1);
+            cycle--;
+            time++;
+        }
+        for (int f : used) heap.offer(f);
+        if (!heap.isEmpty()) time += cycle;     // idle slots in this round
+    }
+    return time;
+}`},
+{t:"Hands of Straights",g:"Medium",
+s:"Can the cards be split into groups of size w, each a run of consecutive numbers?",
+h:["Count each card. Repeatedly take the smallest remaining card as the start of a group.","It must be followed by start + 1, …, start + w − 1. If any is missing, the answer is false. A min-heap of the card values works the same way."],
+cx:"O(n log n)",
+c:`static boolean isNStraightHand(int[] hand, int w) {
+    if (hand.length % w != 0) return false;
+    TreeMap<Integer, Integer> count = new TreeMap<>();
+    for (int x : hand) count.merge(x, 1, Integer::sum);
+    while (!count.isEmpty()) {
+        int start = count.firstKey();           // smallest remaining card
+        for (int v = start; v < start + w; v++) {
+            Integer c = count.get(v);
+            if (c == null) return false;
+            if (c == 1) count.remove(v);
+            else count.put(v, c - 1);
+        }
+    }
+    return true;
+}`},
+{t:"Design Twitter",g:"Hard",
+s:"Support postTweet, follow, unfollow, and getNewsFeed (the 10 most recent tweets from you and the people you follow).",
+h:["Give every tweet a global timestamp. Store each user’s tweets in posting order, and each user’s set of followees.","For the feed, take at most the 10 newest tweets of each relevant user, and keep the 10 newest overall using a min-heap of size 10 ordered by timestamp.","Pop the heap and reverse, so the newest tweet comes first."],
+cx:"Feed: O(f × 10 × log 10), f = users followed",
+c:`class Twitter {
+    private int time = 0;
+    private Map<Integer, List<int[]>> tweets = new HashMap<>();   // user -> {time, tweetId}
+    private Map<Integer, Set<Integer>> follows = new HashMap<>();
+    void postTweet(int userId, int tweetId) {
+        tweets.computeIfAbsent(userId, k -> new ArrayList<>())
+              .add(new int[]{time++, tweetId});
+    }
+    List<Integer> getNewsFeed(int userId) {
+        PriorityQueue<int[]> heap =
+            new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));
+        Set<Integer> users = new HashSet<>(follows.getOrDefault(userId, new HashSet<>()));
+        users.add(userId);
+        for (int u : users) {
+            List<int[]> list = tweets.getOrDefault(u, new ArrayList<>());
+            for (int i = list.size() - 1; i >= Math.max(0, list.size() - 10); i--) {
+                heap.offer(list.get(i));
+                if (heap.size() > 10) heap.poll();     // keep the 10 newest
+            }
+        }
+        LinkedList<Integer> feed = new LinkedList<>();
+        while (!heap.isEmpty()) feed.addFirst(heap.poll()[1]);   // newest first
+        return feed;
+    }
+    void follow(int followerId, int followeeId) {
+        follows.computeIfAbsent(followerId, k -> new HashSet<>()).add(followeeId);
+    }
+    void unfollow(int followerId, int followeeId) {
+        if (follows.containsKey(followerId))
+            follows.get(followerId).remove(followeeId);
+    }
+}`},
+{t:"Connect N Ropes with Minimum Cost",g:"Hard",
+s:"Joining two ropes costs the sum of their lengths. Join all ropes into one at the least total cost.",
+h:["Always join the two shortest ropes. Long ropes then get added into the total as few times as possible.","A min-heap gives the two shortest each time. Push the joined rope back."],
+cx:"O(n log n)",
+c:`static int connectRopes(int[] ropes) {
+    PriorityQueue<Integer> heap = new PriorityQueue<>();
+    for (int r : ropes) heap.offer(r);
+    int cost = 0;
+    while (heap.size() > 1) {
+        int sum = heap.poll() + heap.poll();   // join the two shortest
+        cost += sum;
+        heap.offer(sum);
+    }
+    return cost;
+}`},
+{t:"Kth Largest Sum of Contiguous Subarrays",g:"Hard",
+s:"Among the sums of all contiguous subarrays, find the kth largest.",
+h:["There are about n² / 2 subarray sums. Generate them all with a running sum from each start.","Keep a min-heap of size k, as in Kth Largest Element. At the end the top is the answer."],
+cx:"O(n² log k), O(k)",
+c:`static int kthLargestSubarraySum(int[] a, int k) {
+    PriorityQueue<Integer> heap = new PriorityQueue<>();   // min-heap of size k
+    for (int i = 0; i < a.length; i++) {
+        int sum = 0;
+        for (int j = i; j < a.length; j++) {
+            sum += a[j];
+            heap.offer(sum);
+            if (heap.size() > k) heap.poll();
+        }
+    }
+    return heap.peek();
+}`},
+{t:"Merge K Sorted Lists",g:"Hard",
+s:"Merge k sorted linked lists into one sorted list.",
+h:["Put the head of each list in a min-heap ordered by value.","Pop the smallest node, link it to the result, and push that node’s next.","The heap never holds more than k nodes, so each step is O(log k)."],
+cx:"O(N log k) for N total nodes",
+c:`static ListNode mergeKLists(ListNode[] lists) {
+    PriorityQueue<ListNode> heap =
+        new PriorityQueue<>((a, b) -> Integer.compare(a.val, b.val));
+    for (ListNode node : lists)
+        if (node != null) heap.offer(node);
+    ListNode dummy = new ListNode(0), tail = dummy;
+    while (!heap.isEmpty()) {
+        ListNode node = heap.poll();         // smallest head
+        tail.next = node;
+        tail = node;
+        if (node.next != null) heap.offer(node.next);
+    }
+    return dummy.next;
+}`},
+{t:"K Most Frequent Elements",g:"Hard",
+s:"Return the k values that appear most often.",
+h:["Count each value with a hash map.","Keep a min-heap of size k ordered by frequency. When it grows past k, remove the least frequent. What remains is the k most frequent.","A bucket sort by frequency gives O(n) if you need it."],
+cx:"O(n log k)",
+c:`static int[] topKFrequent(int[] nums, int k) {
+    Map<Integer, Integer> count = new HashMap<>();
+    for (int x : nums) count.merge(x, 1, Integer::sum);
+    // min-heap on frequency, holding the k most frequent
+    PriorityQueue<int[]> heap =
+        new PriorityQueue<>((a, b) -> Integer.compare(a[1], b[1]));
+    for (Map.Entry<Integer, Integer> e : count.entrySet()) {
+        heap.offer(new int[]{e.getKey(), e.getValue()});
+        if (heap.size() > k) heap.poll();
+    }
+    int[] res = new int[k];
+    for (int i = 0; i < k; i++) res[i] = heap.poll()[0];
+    return res;
+}`},
+{t:"Find the Median from a Data Stream",g:"Hard",
+s:"Numbers arrive one at a time. After each, report the median so far.",
+h:["Split the numbers into two halves: a max-heap (low) for the smaller half and a min-heap (high) for the larger half.","Keep low the same size as high, or one bigger. The median is low’s top, or the average of both tops.","To add: push into low, move low’s largest to high, and if high is now bigger, move its smallest back."],
+cx:"add O(log n), median O(1)",
+c:`class MedianFinder {
+    private PriorityQueue<Integer> low =
+        new PriorityQueue<>(Collections.reverseOrder());   // smaller half
+    private PriorityQueue<Integer> high = new PriorityQueue<>();   // larger half
+    void addNum(int num) {
+        low.offer(num);
+        high.offer(low.poll());                  // largest of low goes up
+        if (high.size() > low.size()) low.offer(high.poll());
+    }
+    double findMedian() {
+        if (low.size() > high.size()) return low.peek();
+        return (low.peek() + high.peek()) / 2.0;
+    }
+}`},
+{t:"Maximum Sum Combination",g:"Hard",
+s:"Two arrays of size n. Return the k largest sums a[i] + b[j] (my guess for the seventh problem in the list).",
+h:["Sort both arrays. The largest sum uses the last element of each.","Put that pair in a max-heap. Each time you pop (i, j), the next candidates are (i − 1, j) and (i, j − 1). A set stops the same pair being added twice.","Repeat k times."],
+cx:"O((n + k) log n)",
+c:`static List<Integer> maxSumCombinations(int[] a, int[] b, int k) {
+    int n = a.length;
+    Arrays.sort(a);
+    Arrays.sort(b);                     // largest values are at the end
+    PriorityQueue<int[]> heap =
+        new PriorityQueue<>((x, y) -> Integer.compare(y[0], x[0]));   // {sum, i, j}
+    Set<Long> seen = new HashSet<>();
+    heap.offer(new int[]{a[n - 1] + b[n - 1], n - 1, n - 1});
+    seen.add((long) (n - 1) * n + (n - 1));
+    List<Integer> res = new ArrayList<>();
+    while (res.size() < k && !heap.isEmpty()) {
+        int[] top = heap.poll();
+        res.add(top[0]);
+        int i = top[1], j = top[2];
+        if (i > 0 && seen.add((long) (i - 1) * n + j))
+            heap.offer(new int[]{a[i - 1] + b[j], i - 1, j});
+        if (j > 0 && seen.add((long) i * n + (j - 1)))
+            heap.offer(new int[]{a[i] + b[j - 1], i, j - 1});
+    }
+    return res;
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|class|private|null)\b|\b(int|long|boolean|void|char|true|false|PriorityQueue|Collections|Arrays|List|ArrayList|Map|HashMap|TreeMap|Integer|Set|HashSet|LinkedList|ListNode|Long)\b|\b(\d+)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+const KEY="heaps-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+esc(p.s)+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p></div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Binary Search Tree: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+</style></head>
+<body><main>
+<h1>Binary Search Tree: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Binary Search Trees section (15 problems). Built from the standard list, because the sheet’s BST section would not load. Check the titles against your sheet.</p>
+<section class="tpl">
+<h2>The pattern: use the ordering to throw away half the tree</h2>
+<p>In a BST every value in the left subtree is smaller than the node, and every value in the right subtree is larger. So at each node you go left or right, never both, and a lookup takes O(height). An <b>inorder traversal gives sorted order</b>, which turns many problems (kth smallest, recover, two sum) into “do it on a sorted list”.</p>
+<p><b>Watch for:</b> validating a BST needs a value range passed down, not just a comparison with the parent. A skewed tree makes height n, so O(height) becomes O(n).</p>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const P=[
+{t:"Introduction to Binary Search Trees",g:"Concepts",
+s:"The BST property, and what it makes fast.",
+h:["For every node, all values in its left subtree are smaller and all in its right subtree are larger (this sheet’s problems assume distinct values).","Search, insert and delete cost O(height): about O(log n) when balanced, O(n) when the tree is a chain.","Inorder traversal visits the values in sorted order."],
+cx:"O(height) per operation",
+c:`class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int v) { val = v; }
+}`},
+{t:"Search in a BST (and Find Min / Max)",g:"Concepts",
+s:"Find the node with a given value. Also find the smallest and largest values.",
+h:["Compare with the node: go left if the target is smaller, right if larger.","The minimum is the leftmost node. The maximum is the rightmost node."],
+cx:"O(height), O(1)",
+c:`static TreeNode searchBST(TreeNode root, int val) {
+    while (root != null && root.val != val)
+        root = (val < root.val) ? root.left : root.right;
+    return root;     // null if not found
+}
+static int findMin(TreeNode root) {
+    while (root.left != null) root = root.left;
+    return root.val;
+}
+static int findMax(TreeNode root) {
+    while (root.right != null) root = root.right;
+    return root.val;
+}`},
+{t:"Ceil in a BST",g:"Concepts",
+s:"Find the smallest value that is greater than or equal to key. Return −1 if none.",
+h:["Walk down as in a search. If the node is smaller than key, go right.","If the node is bigger, it is a candidate. Save it and go left to look for a smaller one."],
+cx:"O(height)",
+c:`static int ceil(TreeNode root, int key) {
+    int ans = -1;
+    while (root != null) {
+        if (root.val == key) return key;
+        if (root.val < key) {
+            root = root.right;
+        } else {
+            ans = root.val;      // candidate, try for a smaller one
+            root = root.left;
+        }
+    }
+    return ans;
+}`},
+{t:"Floor in a BST",g:"Concepts",
+s:"Find the largest value that is less than or equal to key. Return −1 if none.",
+h:["Mirror image of ceil. If the node is bigger than key, go left.","If the node is smaller, it is a candidate. Save it and go right."],
+cx:"O(height)",
+c:`static int floor(TreeNode root, int key) {
+    int ans = -1;
+    while (root != null) {
+        if (root.val == key) return key;
+        if (root.val > key) {
+            root = root.left;
+        } else {
+            ans = root.val;      // candidate, try for a larger one
+            root = root.right;
+        }
+    }
+    return ans;
+}`},
+{t:"Insert a Given Node in a BST",g:"Concepts",
+s:"Insert a new value, keeping the BST property.",
+h:["Walk down as in a search until you reach a null position. A new value always becomes a leaf.","Recursively, each call returns its subtree’s root, so you assign the result back to the parent’s child."],
+cx:"O(height)",
+c:`static TreeNode insertIntoBST(TreeNode root, int val) {
+    if (root == null) return new TreeNode(val);
+    if (val < root.val) root.left = insertIntoBST(root.left, val);
+    else root.right = insertIntoBST(root.right, val);
+    return root;
+}`},
+{t:"Delete a Node in a BST",g:"Concepts",
+s:"Remove a value and keep the BST valid.",
+h:["Find the node. If it has 0 or 1 child, replace it with that child.","If it has two children, replace its value with the inorder successor (the smallest value in the right subtree), then delete that successor from the right subtree."],
+cx:"O(height)",
+c:`static TreeNode deleteNode(TreeNode root, int key) {
+    if (root == null) return null;
+    if (key < root.val) {
+        root.left = deleteNode(root.left, key);
+    } else if (key > root.val) {
+        root.right = deleteNode(root.right, key);
+    } else {
+        if (root.left == null) return root.right;    // 0 or 1 child
+        if (root.right == null) return root.left;
+        // two children: use the inorder successor
+        TreeNode succ = root.right;
+        while (succ.left != null) succ = succ.left;
+        root.val = succ.val;
+        root.right = deleteNode(root.right, succ.val);
+    }
+    return root;
+}`},
+{t:"Kth Smallest / Largest Element in a BST",g:"Concepts",
+s:"Find the kth smallest value (and, by mirroring, the kth largest).",
+h:["Inorder gives sorted order, so the kth node visited is the kth smallest.","Stop as soon as you reach it. For the kth largest, swap left and right in the traversal (reverse inorder)."],
+cx:"O(height + k), O(height)",
+c:`static int kthSmallest(TreeNode root, int k) {
+    Deque<TreeNode> st = new ArrayDeque<>();
+    TreeNode cur = root;
+    while (cur != null || !st.isEmpty()) {
+        while (cur != null) {
+            st.push(cur);
+            cur = cur.left;
+        }
+        cur = st.pop();
+        if (--k == 0) return cur.val;
+        cur = cur.right;
+    }
+    return -1;
+}
+// kth largest: the same loop with left and right swapped`},
+{t:"Check if a Tree Is a BST",g:"Concepts",
+s:"Is the given binary tree a valid BST?",
+h:["Comparing only with the parent is not enough: a value deep in the left subtree can still be larger than an ancestor.","Pass an allowed range (low, high) down. Going left tightens the high bound, going right tightens the low bound.","Use long bounds so that Integer.MIN_VALUE and MAX_VALUE nodes work."],
+cx:"O(n), O(height)",
+c:`static boolean isValidBST(TreeNode root) {
+    return valid(root, Long.MIN_VALUE, Long.MAX_VALUE);
+}
+static boolean valid(TreeNode node, long lo, long hi) {
+    if (node == null) return true;
+    if (node.val <= lo || node.val >= hi) return false;
+    return valid(node.left, lo, node.val)
+        && valid(node.right, node.val, hi);
+}`},
+{t:"LCA in a BST",g:"Practice",
+s:"Find the lowest common ancestor of two nodes in a BST.",
+h:["If both values are smaller than the current node, go left. If both are larger, go right.","Otherwise they split here (or one equals the node), so this node is the LCA. No need to search both sides, unlike a general binary tree."],
+cx:"O(height), O(1)",
+c:`static TreeNode lcaBST(TreeNode root, TreeNode p, TreeNode q) {
+    while (root != null) {
+        if (p.val < root.val && q.val < root.val) root = root.left;
+        else if (p.val > root.val && q.val > root.val) root = root.right;
+        else return root;      // they split here
+    }
+    return null;
+}`},
+{t:"Construct a BST from Preorder Traversal",g:"Practice",
+s:"Rebuild the BST from its preorder array.",
+h:["Read the preorder with a moving index. Each call builds a subtree whose values must stay below an upper bound.","The next value becomes the root. Its left subtree uses the root as the bound. Its right subtree keeps the parent’s bound.","If the next value is above the bound, this subtree is finished. Each value is placed once, so the cost is O(n)."],
+cx:"O(n)",
+c:`static int idx;
+static TreeNode bstFromPreorder(int[] pre) {
+    idx = 0;
+    return build(pre, Integer.MAX_VALUE);
+}
+static TreeNode build(int[] pre, int bound) {
+    if (idx == pre.length || pre[idx] > bound) return null;
+    TreeNode root = new TreeNode(pre[idx++]);
+    root.left = build(pre, root.val);    // left values stay below the root
+    root.right = build(pre, bound);      // right values stay below the parent’s bound
+    return root;
+}`},
+{t:"Inorder Successor / Predecessor in a BST",g:"Practice",
+s:"Find the next larger value (successor) or next smaller value (predecessor) of a given node.",
+h:["Walk down from the root. For the successor: if p is smaller than the node, the node is a candidate, so go left. Otherwise go right.","The predecessor is the mirror image."],
+cx:"O(height)",
+c:`static TreeNode inorderSuccessor(TreeNode root, TreeNode p) {
+    TreeNode succ = null;
+    while (root != null) {
+        if (p.val < root.val) {
+            succ = root;          // candidate, look for a closer one
+            root = root.left;
+        } else root = root.right;
+    }
+    return succ;
+}
+static TreeNode inorderPredecessor(TreeNode root, TreeNode p) {
+    TreeNode pred = null;
+    while (root != null) {
+        if (p.val > root.val) {
+            pred = root;
+            root = root.right;
+        } else root = root.left;
+    }
+    return pred;
+}`},
+{t:"BST Iterator",g:"Practice",
+s:"Implement next() and hasNext() that walk the BST in sorted order, with O(height) memory.",
+h:["Keep a stack holding the path to the next smallest node: push a node and all its left descendants.","next(): pop the top, then push the left chain of its right child. Each node is pushed and popped once, so next() is O(1) on average."],
+cx:"next O(1) amortised, O(height) space",
+c:`class BSTIterator {
+    private Deque<TreeNode> st = new ArrayDeque<>();
+    BSTIterator(TreeNode root) { pushLeft(root); }
+    private void pushLeft(TreeNode node) {
+        while (node != null) {
+            st.push(node);
+            node = node.left;
+        }
+    }
+    int next() {
+        TreeNode node = st.pop();
+        pushLeft(node.right);     // the next values come from its right side
+        return node.val;
+    }
+    boolean hasNext() { return !st.isEmpty(); }
+}`},
+{t:"Two Sum IV (Input Is a BST)",g:"Practice",
+s:"Are there two nodes whose values add up to k?",
+h:["Sorted two-pointer idea: one iterator going up from the smallest, another going down from the largest.","Sum too small: advance the small side. Too big: advance the large side. Stop when they meet.","This uses O(height) space. A HashSet also works but uses O(n)."],
+cx:"O(n) time, O(height) space",
+c:`static boolean findTarget(TreeNode root, int k) {
+    Deque<TreeNode> fwd = new ArrayDeque<>(), back = new ArrayDeque<>();
+    for (TreeNode n = root; n != null; n = n.left) fwd.push(n);
+    for (TreeNode n = root; n != null; n = n.right) back.push(n);
+    while (!fwd.isEmpty() && !back.isEmpty() && fwd.peek() != back.peek()) {
+        int sum = fwd.peek().val + back.peek().val;
+        if (sum == k) return true;
+        if (sum < k) {                       // move the small side up
+            TreeNode n = fwd.pop().right;
+            for (; n != null; n = n.left) fwd.push(n);
+        } else {                             // move the large side down
+            TreeNode n = back.pop().left;
+            for (; n != null; n = n.right) back.push(n);
+        }
+    }
+    return false;
+}`},
+{t:"Recover a BST",g:"Practice",
+s:"Exactly two nodes were swapped by mistake. Fix the tree without changing its shape.",
+h:["Inorder of a valid BST is increasing. A swap creates one or two places where a value is smaller than the previous one.","The first such drop gives the first wrong node (the earlier, bigger value). The last drop gives the second wrong node (the later, smaller value).","Swap the two values."],
+cx:"O(n), O(height)",
+c:`static TreeNode first, second, prev;
+static void recoverTree(TreeNode root) {
+    first = second = prev = null;
+    inorderFix(root);
+    int tmp = first.val;
+    first.val = second.val;
+    second.val = tmp;
+}
+static void inorderFix(TreeNode node) {
+    if (node == null) return;
+    inorderFix(node.left);
+    if (prev != null && prev.val > node.val) {
+        if (first == null) first = prev;   // first drop: the bigger value
+        second = node;                     // last drop: the smaller value
+    }
+    prev = node;
+    inorderFix(node.right);
+}`},
+{t:"Largest BST in a Binary Tree",g:"Practice",
+s:"Find the size of the largest subtree that is itself a valid BST.",
+h:["Go bottom-up. For each subtree return {size, min, max}, or null if it is not a BST.","A node makes a BST with its children if both are BSTs and left max < node < right min.","Then size = left + right + 1. Keep the best size seen."],
+cx:"O(n), O(height)",
+c:`static int best;
+static int largestBST(TreeNode root) {
+    best = 0;
+    info(root);
+    return best;
+}
+// returns {size, min, max}, or null if the subtree is not a BST
+static int[] info(TreeNode node) {
+    if (node == null)
+        return new int[]{0, Integer.MAX_VALUE, Integer.MIN_VALUE};
+    int[] l = info(node.left), r = info(node.right);
+    if (l == null || r == null || node.val <= l[2] || node.val >= r[1])
+        return null;
+    int size = l[0] + r[0] + 1;
+    best = Math.max(best, size);
+    return new int[]{size, Math.min(l[1], node.val), Math.max(r[2], node.val)};
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|class|private|null)\b|\b(int|long|boolean|void|true|false|TreeNode|Deque|ArrayDeque|Long|Integer)\b|\b(\d+)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+const KEY="bst-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+esc(p.s)+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p></div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>
