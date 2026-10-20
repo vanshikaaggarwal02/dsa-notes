@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Binary Search: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+.body a{color:var(--acc);font-size:15px}
+</style></head>
+<body><main>
+<h1>Binary Search: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Binary Search section. Open a card after trying the problem from memory.</p>
+<section class="tpl">
+<h2>The pattern: search the answer, not the array</h2>
+<p><b>Spot it:</b> “minimise the maximum” or “maximise the minimum”, plus a cheap check for “is X possible?”. Feasibility is monotonic, so answers split into a no side and a yes side, and binary search finds the boundary.</p>
+<div class="code" id="tpl"></div>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const T=`int lo = MIN_ANSWER, hi = MAX_ANSWER, ans = -1;
+while (lo <= hi) {
+    int mid = lo + (hi - lo) / 2;
+    if (feasible(mid)) {
+        ans = mid;
+        hi = mid - 1;   // minimising; use lo = mid + 1 if maximising
+    } else {
+        lo = mid + 1;   // (other direction when maximising)
+    }
+}`;
+const P=[
+{t:"Binary Search (find X)",g:"Plain search",
+s:"Find the index of x in a sorted array, or -1.",
+h:["Compare a[mid] with x and discard the half that cannot contain it.","Use mid = lo + (hi - lo) / 2 to avoid overflow."],
+cx:"O(log n) time, O(1) space",
+c:`static int search(int[] a, int x) {
+    int lo = 0, hi = a.length - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] == x) return mid;
+        if (a[mid] < x) lo = mid + 1;   // x is on the right
+        else hi = mid - 1;              // x is on the left
+    }
+    return -1;
+}`},
+{t:"Lower Bound",g:"Bounds",
+s:"First index with a[i] ≥ x. Returns n if none.",
+h:["Treat it as “find the first true” for the condition a[i] ≥ x.","When the condition holds, save mid as the answer and keep looking left."],
+cx:"O(log n)",
+c:`static int lowerBound(int[] a, int x) {
+    int lo = 0, hi = a.length - 1, ans = a.length;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] >= x) {
+            ans = mid;          // candidate, look for an earlier one
+            hi = mid - 1;
+        } else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Upper Bound",g:"Bounds",
+s:"First index with a[i] greater than x. Returns n if none.",
+h:["Identical to lower bound, but the condition is a[i] greater than x (strict)."],
+cx:"O(log n)",
+c:`static int upperBound(int[] a, int x) {
+    int lo = 0, hi = a.length - 1, ans = a.length;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] > x) {
+            ans = mid;
+            hi = mid - 1;
+        } else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Search Insert Position",g:"Bounds",
+s:"Index where target is, or where it would be inserted to keep the array sorted.",
+h:["That is exactly lower bound: the first index with a[i] ≥ target."],
+cx:"O(log n)",
+c:`static int searchInsert(int[] a, int target) {
+    return lowerBound(a, target);   // same code as Lower Bound
+}`},
+{t:"Floor and Ceil",g:"Bounds",
+s:"Floor is the largest value ≤ x. Ceil is the smallest value ≥ x.",
+h:["Floor: when a[mid] ≤ x, save it and go right.","Ceil: when a[mid] ≥ x, save it and go left."],
+cx:"O(log n)",
+c:`static int[] floorCeil(int[] a, int x) {
+    int floor = -1, ceil = -1;
+    int lo = 0, hi = a.length - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] <= x) { floor = a[mid]; lo = mid + 1; }
+        else hi = mid - 1;
+    }
+    lo = 0; hi = a.length - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] >= x) { ceil = a[mid]; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return new int[]{floor, ceil};
+}`},
+{t:"First and Last Occurrence",g:"Bounds",
+s:"First and last index of x in a sorted array with duplicates.",
+h:["first = lowerBound(x). If a[first] is not x, x is absent.","last = upperBound(x) − 1."],
+cx:"O(log n)",
+c:`static int[] firstLast(int[] a, int x) {
+    int first = lowerBound(a, x);
+    // x is absent
+    if (first == a.length || a[first] != x) return new int[]{-1, -1};
+    int last = upperBound(a, x) - 1;
+    return new int[]{first, last};
+}`},
+{t:"Count Occurrences",g:"Bounds",
+s:"How many times x appears in a sorted array.",
+h:["Count = upperBound(x) − lowerBound(x)."],
+cx:"O(log n)",
+c:`static int count(int[] a, int x) {
+    return upperBound(a, x) - lowerBound(a, x);
+}`},
+{t:"Search in Rotated Sorted Array I",g:"Rotated array",
+s:"Sorted array rotated at an unknown pivot, distinct values. Find x.",
+h:["At any mid, at least one half is sorted.","Find the sorted half, check if x lies in its range, and go there, else go to the other half."],
+cx:"O(log n)",
+c:`static int searchRotated(int[] a, int x) {
+    int lo = 0, hi = a.length - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] == x) return mid;
+        if (a[lo] <= a[mid]) {
+            // left half is sorted
+            if (a[lo] <= x && x < a[mid]) hi = mid - 1;
+            else lo = mid + 1;
+        } else {
+            // right half is sorted
+            if (a[mid] < x && x <= a[hi]) lo = mid + 1;
+            else hi = mid - 1;
+        }
+    }
+    return -1;
+}`},
+{t:"Search in Rotated Sorted Array II",g:"Rotated array",
+s:"Same as above, but duplicates are allowed. Return true or false.",
+h:["Duplicates can hide which half is sorted: a[lo] == a[mid] == a[hi].","In that case shrink both ends by one and retry. Worst case becomes O(n)."],
+cx:"O(log n) average, O(n) worst",
+c:`static boolean searchRotated2(int[] a, int x) {
+    int lo = 0, hi = a.length - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] == x) return true;
+        // cannot tell which half is sorted
+        if (a[lo] == a[mid] && a[mid] == a[hi]) {
+            lo++; hi--;
+            continue;
+        }
+        if (a[lo] <= a[mid]) {
+            if (a[lo] <= x && x < a[mid]) hi = mid - 1;
+            else lo = mid + 1;
+        } else {
+            if (a[mid] < x && x <= a[hi]) lo = mid + 1;
+            else hi = mid - 1;
+        }
+    }
+    return false;
+}`},
+{t:"Minimum in Rotated Sorted Array",g:"Rotated array",
+s:"Find the smallest element of a rotated sorted array (distinct).",
+h:["Compare a[mid] with a[hi]. If a[mid] is bigger, the minimum is on the right of mid.","Otherwise the minimum is mid or on its left, so set hi = mid."],
+cx:"O(log n)",
+c:`static int findMin(int[] a) {
+    int lo = 0, hi = a.length - 1;
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] > a[hi]) lo = mid + 1;   // min is to the right
+        else hi = mid;                      // mid could be the min
+    }
+    return a[lo];
+}`},
+{t:"How Many Times Is the Array Rotated",g:"Rotated array",
+s:"A sorted array was rotated k times. Find k.",
+h:["k is the index of the minimum element, so use the same search and return the index."],
+cx:"O(log n)",
+c:`static int rotations(int[] a) {
+    int lo = 0, hi = a.length - 1;
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] > a[hi]) lo = mid + 1;
+        else hi = mid;
+    }
+    return lo;   // index of the minimum
+}`},
+{t:"Single Element in a Sorted Array",g:"Parity / slope",
+s:"Every element appears twice except one. Find it in O(log n).",
+h:["Before the single element, pairs start at even indices. After it, pairs start at odd indices.","At mid, check if you are still in the “normal” zone: if yes go right, if no go left."],
+cx:"O(log n)",
+c:`static int singleNonDuplicate(int[] a) {
+    int n = a.length;
+    if (n == 1) return a[0];
+    if (a[0] != a[1]) return a[0];
+    if (a[n-1] != a[n-2]) return a[n-1];
+    int lo = 1, hi = n - 2;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] != a[mid-1] && a[mid] != a[mid+1]) return a[mid];
+        // still before the single element
+        boolean normal = (mid % 2 == 0 && a[mid] == a[mid+1])
+                      || (mid % 2 == 1 && a[mid] == a[mid-1]);
+        if (normal) lo = mid + 1;
+        else hi = mid - 1;
+    }
+    return -1;
+}`,u:""},
+{t:"Find Peak Element",g:"Parity / slope",
+s:"Find any index larger than both neighbours. Outside the array counts as minus infinity.",
+h:["Check both ends first, then search 1 to n−2.","If a[mid] > a[mid−1], you are going uphill, so a peak is on the right. Else a peak is on the left."],
+cx:"O(log n)",u:"find-peak-element",
+c:`static int findPeak(int[] a) {
+    int n = a.length;
+    if (n == 1) return 0;
+    if (a[0] > a[1]) return 0;
+    if (a[n-1] > a[n-2]) return n - 1;
+    int lo = 1, hi = n - 2;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] > a[mid-1] && a[mid] > a[mid+1]) return mid;
+        if (a[mid] > a[mid-1]) lo = mid + 1;   // uphill, go right
+        else hi = mid - 1;                     // downhill, go left
+    }
+    return -1;
+}`},
+{t:"Aggressive Cows",g:"Answer search",
+s:"Place k cows so the smallest gap between any two is as large as possible.",
+h:["Sort stalls. The answer d lies between 1 and (last − first).","feasible(d): place cows greedily, each at least d after the previous. Placed ≥ k means d works, so try larger."],
+cx:"O(n log n + n log range)",u:"aggressive-cows",
+c:`static boolean can(int[] s, int k, int d) {
+    int cows = 1, last = s[0];
+    for (int i = 1; i < s.length; i++) {
+        if (s[i] - last >= d) {
+            cows++;
+            last = s[i];
+        }
+    }
+    return cows >= k;
+}
+static int aggressiveCows(int[] s, int k) {
+    Arrays.sort(s);
+    int lo = 1, hi = s[s.length - 1] - s[0], ans = 0;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (can(s, k, mid)) { ans = mid; lo = mid + 1; }  // try bigger gap
+        else hi = mid - 1;
+    }
+    return ans;
+}`},
+{t:"Book Allocation",g:"Answer search",
+s:"Give n books in order to m students so the largest pile of pages is as small as possible.",
+h:["If m is more than n, return -1.","Answer lies between max(pages) and sum(pages).","feasible(limit): start a new student when the pile would pass the limit. Students needed ≤ m means it works, so try smaller."],
+cx:"O(n log(sum − max))",u:"book-allocation-problem",
+c:`static int studentsNeeded(int[] a, int limit) {
+    int students = 1, cur = 0;
+    for (int x : a) {
+        if (cur + x > limit) { students++; cur = x; }
+        else cur += x;
+    }
+    return students;
+}
+static int books(int[] a, int m) {
+    if (m > a.length) return -1;
+    int lo = 0, hi = 0, ans = -1;
+    for (int x : a) { lo = Math.max(lo, x); hi += x; }
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (studentsNeeded(a, mid) <= m) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Split Array: Largest Sum",g:"Answer search",
+s:"Split into k contiguous parts so the largest part sum is as small as possible.",
+h:["Same as Book Allocation: values are pages and parts are students.","Reuse the same range and greedy check."],
+cx:"O(n log(sum − max))",u:"split-array---largest-sum",
+c:`static int splitArray(int[] a, int k) {
+    int lo = 0, hi = 0;
+    for (int x : a) { lo = Math.max(lo, x); hi += x; }
+    int ans = hi;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        int parts = 1, cur = 0;
+        for (int x : a) {
+            if (cur + x > mid) { parts++; cur = x; }
+            else cur += x;
+        }
+        if (parts <= k) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Minimize Max Distance to Gas Station",g:"Answer search",
+s:"Add k stations to minimise the largest gap. The answer is a decimal.",
+h:["Binary search on doubles and stop when hi − lo is under 1e-6. Never use mid ± 1.","A gap g needs ceil(g / d) − 1 new stations to make every piece ≤ d. Total ≤ k means d works."],
+cx:"O(n log(range / 1e-6))",u:"minimise-max-distance-to-gas-stations",
+c:`static double minMaxDist(int[] s, int k) {
+    double lo = 0, hi = 0;
+    for (int i = 1; i < s.length; i++)
+        hi = Math.max(hi, s[i] - s[i-1]);
+    while (hi - lo > 1e-6) {
+        double mid = (lo + hi) / 2.0;
+        int need = 0;
+        for (int i = 1; i < s.length; i++)
+            need += (int) Math.ceil((s[i] - s[i-1]) / mid) - 1;
+        if (need <= k) hi = mid;   // works, try smaller
+        else lo = mid;
+    }
+    return hi;
+}`},
+{t:"Median of 2 Sorted Arrays",g:"Partition",
+s:"Median of two sorted arrays in O(log(min(n1, n2))).",
+h:["Binary search how many elements m1 to take from the smaller array into the left half. The left half has (n1+n2+1)/2 elements, so b gives m2 = left − m1.","l1, l2 are the last left values and r1, r2 the first right values. Use MIN and MAX at the edges.","Valid when l1 ≤ r2 and l2 ≤ r1. If l1 > r2, take fewer from a. Else take more."],
+cx:"O(log(min(n1, n2)))",u:"median-of-2-sorted-arrays",
+c:`static double median(int[] a, int[] b) {
+    if (a.length > b.length) return median(b, a);
+    int n1 = a.length, n2 = b.length;
+    int left = (n1 + n2 + 1) / 2;
+    int lo = 0, hi = n1;
+    while (lo <= hi) {
+        int m1 = lo + (hi - lo) / 2;   // taken from a
+        int m2 = left - m1;            // taken from b
+        int l1 = m1 > 0 ? a[m1-1] : Integer.MIN_VALUE;
+        int l2 = m2 > 0 ? b[m2-1] : Integer.MIN_VALUE;
+        int r1 = m1 < n1 ? a[m1] : Integer.MAX_VALUE;
+        int r2 = m2 < n2 ? b[m2] : Integer.MAX_VALUE;
+        if (l1 <= r2 && l2 <= r1) {
+            if ((n1 + n2) % 2 == 1) return Math.max(l1, l2);
+            return (Math.max(l1, l2) + Math.min(r1, r2)) / 2.0;
+        }
+        if (l1 > r2) hi = m1 - 1;      // took too many from a
+        else lo = m1 + 1;              // took too few from a
+    }
+    return 0;
+}`},
+{t:"Kth Element of 2 Sorted Arrays",g:"Partition",
+s:"Kth smallest of the merged arrays without merging.",
+h:["Same partition idea, but the left half has exactly k elements.","m1 ranges from max(0, k − n2) to min(k, n1). The answer is max(l1, l2)."],
+cx:"O(log(min(n1, n2)))",u:"kth-element-of-2-sorted-arrays",
+c:`static int kth(int[] a, int[] b, int k) {
+    if (a.length > b.length) return kth(b, a, k);
+    int n1 = a.length, n2 = b.length;
+    int lo = Math.max(0, k - n2), hi = Math.min(k, n1);
+    while (lo <= hi) {
+        int m1 = lo + (hi - lo) / 2, m2 = k - m1;
+        int l1 = m1 > 0 ? a[m1-1] : Integer.MIN_VALUE;
+        int l2 = m2 > 0 ? b[m2-1] : Integer.MIN_VALUE;
+        int r1 = m1 < n1 ? a[m1] : Integer.MAX_VALUE;
+        int r2 = m2 < n2 ? b[m2] : Integer.MAX_VALUE;
+        if (l1 <= r2 && l2 <= r1) return Math.max(l1, l2);
+        if (l1 > r2) hi = m1 - 1;
+        else lo = m1 + 1;
+    }
+    return -1;
+}`},
+{t:"Square Root of a Number",g:"Answer search",
+s:"Floor of the square root of x, without using a library function.",
+h:["The answer is between 1 and x. Find the largest mid with mid × mid ≤ x.","Use long for mid × mid so it cannot overflow."],
+cx:"O(log x)",
+c:`static int sqrt(int x) {
+    int lo = 1, hi = x, ans = 0;
+    while (lo <= hi) {
+        long mid = lo + (hi - lo) / 2;
+        if (mid * mid <= x) {
+            ans = (int) mid;     // works, try bigger
+            lo = (int) mid + 1;
+        } else hi = (int) mid - 1;
+    }
+    return ans;
+}`},
+{t:"Nth Root of a Number",g:"Answer search",
+s:"Find the integer m with m^n = x. Return -1 if there is none.",
+h:["Search m from 1 to x and compare m^n with x.","Compute the power with an early stop once it passes x, so it never overflows."],
+cx:"O(n log x)",
+c:`// 0 if m^n is smaller than x, 1 if equal, 2 if bigger
+static int compare(int m, int n, int x) {
+    long p = 1;
+    for (int i = 0; i < n; i++) {
+        p *= m;
+        if (p > x) return 2;   // stop early
+    }
+    return p == x ? 1 : 0;
+}
+static int nthRoot(int n, int x) {
+    int lo = 1, hi = x;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        int r = compare(mid, n, x);
+        if (r == 1) return mid;
+        if (r == 0) lo = mid + 1;
+        else hi = mid - 1;
+    }
+    return -1;
+}`},
+{t:"Koko Eating Bananas",g:"Answer search",
+s:"Piles of bananas, h hours. Find the smallest eating speed that finishes in time.",
+h:["Speed lies between 1 and the biggest pile.","feasible(speed): hours = sum of ceil(pile / speed). Hours ≤ h means it works, so try slower."],
+cx:"O(n log max)",
+c:`static long hours(int[] p, int speed) {
+    long total = 0;
+    for (int x : p) total += (x + speed - 1) / speed;   // ceil
+    return total;
+}
+static int minEatingSpeed(int[] p, int h) {
+    int lo = 1, hi = 0;
+    for (int x : p) hi = Math.max(hi, x);
+    int ans = hi;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (hours(p, mid) <= h) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Minimum Days to Make m Bouquets",g:"Answer search",
+s:"bloomDay[i] is when flower i blooms. Make m bouquets of k adjacent flowers. Find the earliest day.",
+h:["If m × k is more than n, return -1.","The answer is between the smallest and largest bloom day.","feasible(day): scan, counting a run of bloomed flowers. Each run of k makes a bouquet. Bouquets ≥ m means it works."],
+cx:"O(n log(max − min))",
+c:`static boolean possible(int[] b, int day, int m, int k) {
+    int bouquets = 0, run = 0;
+    for (int x : b) {
+        if (x <= day) {
+            run++;
+            if (run == k) { bouquets++; run = 0; }
+        } else run = 0;    // a gap breaks the run
+    }
+    return bouquets >= m;
+}
+static int minDays(int[] b, int m, int k) {
+    if ((long) m * k > b.length) return -1;
+    int lo = Integer.MAX_VALUE, hi = 0, ans = -1;
+    for (int x : b) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (possible(b, mid, m, k)) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Smallest Divisor Given a Threshold",g:"Answer search",
+s:"Find the smallest divisor d so that the sum of ceil(a[i] / d) is at most the threshold.",
+h:["d lies between 1 and the maximum element.","A larger d gives a smaller sum, so it is monotonic. If the sum is within the threshold, try smaller."],
+cx:"O(n log max)",
+c:`static int smallestDivisor(int[] a, int threshold) {
+    int lo = 1, hi = 0;
+    for (int x : a) hi = Math.max(hi, x);
+    int ans = hi;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        long sum = 0;
+        for (int x : a) sum += (x + mid - 1) / mid;   // ceil
+        if (sum <= threshold) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Capacity to Ship Packages in D Days",g:"Answer search",
+s:"Packages must ship in order. Find the least ship capacity that finishes within D days.",
+h:["Capacity lies between the heaviest package and the total weight.","feasible(cap): fill a day until the next package would not fit, then start a new day. Days ≤ D means it works."],
+cx:"O(n log(sum − max))",
+c:`static int daysNeeded(int[] w, int cap) {
+    int days = 1, load = 0;
+    for (int x : w) {
+        if (load + x > cap) { days++; load = x; }
+        else load += x;
+    }
+    return days;
+}
+static int shipWithinDays(int[] w, int d) {
+    int lo = 0, hi = 0;
+    for (int x : w) { lo = Math.max(lo, x); hi += x; }
+    int ans = hi;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (daysNeeded(w, mid) <= d) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Kth Missing Positive Number",g:"Answer search",
+s:"Sorted array of positive integers. Find the kth positive integer that is missing.",
+h:["Missing numbers before a[i] = a[i] − (i + 1).","Find how many indices have fewer than k missing numbers. Call that count lo.","The answer is k + lo, because each of those lo elements pushes the answer up by one."],
+cx:"O(log n)",
+c:`static int findKthPositive(int[] a, int k) {
+    int lo = 0, hi = a.length - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        int missing = a[mid] - (mid + 1);   // missing before a[mid]
+        if (missing < k) lo = mid + 1;
+        else hi = mid - 1;
+    }
+    return k + lo;   // lo elements sit before the answer
+}`},
+{t:"Painter’s Partition",g:"Answer search",
+s:"Paint boards in order with k painters. Minimise the time taken by the busiest painter.",
+h:["This is Book Allocation again: boards are pages and painters are students.","Range is max(board) to sum(board). Count painters needed for a time limit."],
+cx:"O(n log(sum − max))",
+c:`static int paint(int[] boards, int k) {
+    int lo = 0, hi = 0;
+    for (int x : boards) { lo = Math.max(lo, x); hi += x; }
+    int ans = hi;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        int painters = 1, cur = 0;
+        for (int x : boards) {
+            if (cur + x > mid) { painters++; cur = x; }
+            else cur += x;
+        }
+        if (painters <= k) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return ans;
+}`},
+{t:"Row with Maximum 1s",g:"2D matrix",
+s:"Each row of a 0/1 matrix is sorted. Find the row with the most 1s.",
+h:["In each row, lowerBound(1) is the index of the first 1. Ones in that row = m − that index.","Keep the best row. Same lower bound code as before."],
+cx:"O(n log m)",
+c:`static int rowWithMaxOnes(int[][] mat) {
+    int best = -1, bestCount = 0;
+    int m = mat[0].length;
+    for (int i = 0; i < mat.length; i++) {
+        int ones = m - lowerBound(mat[i], 1);
+        if (ones > bestCount) {
+            bestCount = ones;
+            best = i;
+        }
+    }
+    return best;
+}`},
+{t:"Search in a 2D Matrix I",g:"2D matrix",
+s:"Rows are sorted, and each row starts after the previous one ends. Is target present?",
+h:["Treat the matrix as one sorted array of n × m items.","Convert a flat index to a cell: row = idx / m, col = idx % m."],
+cx:"O(log(n × m))",
+c:`static boolean searchMatrix(int[][] mat, int target) {
+    int n = mat.length, m = mat[0].length;
+    int lo = 0, hi = n * m - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        int val = mat[mid / m][mid % m];
+        if (val == target) return true;
+        if (val < target) lo = mid + 1;
+        else hi = mid - 1;
+    }
+    return false;
+}`},
+{t:"Search in a 2D Matrix II",g:"2D matrix",
+s:"Each row and each column is sorted, but rows are not chained. Is target present?",
+h:["Start at the top-right corner. It is the largest in its row and the smallest in its column.","If the value is too big, move left. If too small, move down. Every step removes a row or a column."],
+cx:"O(n + m)",
+c:`static boolean searchMatrix2(int[][] mat, int target) {
+    int row = 0, col = mat[0].length - 1;
+    while (row < mat.length && col >= 0) {
+        int val = mat[row][col];
+        if (val == target) return true;
+        if (val > target) col--;   // too big, move left
+        else row++;                // too small, move down
+    }
+    return false;
+}`},
+{t:"Find a Peak Element II",g:"2D matrix",
+s:"Find a cell larger than its 4 neighbours in a grid. Values are positive and adjacent cells differ.",
+h:["Binary search on columns. Take the middle column and find the row holding its maximum.","Compare that cell with its left and right neighbours. If a neighbour is larger, a peak exists in that direction."],
+cx:"O(n log m)",
+c:`static int[] findPeakGrid(int[][] mat) {
+    int n = mat.length, m = mat[0].length;
+    int lo = 0, hi = m - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        // row holding the max of this column
+        int row = 0;
+        for (int i = 1; i < n; i++)
+            if (mat[i][mid] > mat[row][mid]) row = i;
+        int left = mid > 0 ? mat[row][mid-1] : -1;
+        int right = mid < m - 1 ? mat[row][mid+1] : -1;
+        if (mat[row][mid] > left && mat[row][mid] > right)
+            return new int[]{row, mid};
+        if (left > mat[row][mid]) hi = mid - 1;
+        else lo = mid + 1;
+    }
+    return new int[]{-1, -1};
+}`},
+{t:"Median of a Row-wise Sorted Matrix",g:"2D matrix",
+s:"Each row is sorted. n × m is odd. Find the median of all values.",
+h:["Binary search on the value, between the smallest first-column value and the largest last-column value.","For a value mid, count how many items are ≤ mid using upperBound on each row.","The median is the smallest value whose count is more than (n × m) / 2."],
+cx:"O(n log m × log(range))",
+c:`static int matrixMedian(int[][] mat) {
+    int n = mat.length, m = mat[0].length;
+    int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+    for (int[] row : mat) {
+        lo = Math.min(lo, row[0]);
+        hi = Math.max(hi, row[m-1]);
+    }
+    int need = (n * m) / 2;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        int count = 0;
+        for (int[] row : mat) count += upperBound(row, mid);
+        if (count <= need) lo = mid + 1;
+        else hi = mid - 1;
+    }
+    return lo;
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|continue|boolean)\b|\b(int|long|double|void|true|false)\b|\b(\d+(?:\.\d+)?(?:e-?\d+)?)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+document.getElementById("tpl").innerHTML=hl(T);
+const KEY="bs-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+p.s+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+x+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p>'+(p.u?'<a href="https://takeuforward.org/practice/dsa/'+p.u+'" target="_blank" rel="noopener">Open on TUF</a>':'')+'</div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>
