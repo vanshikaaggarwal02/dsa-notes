@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Graphs: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+</style></head>
+<body><main>
+<h1>Graphs: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Graphs section. Basics, BFS, DFS, directed graphs, topological sort, shortest paths, disjoint set, spanning trees and advanced algorithms (50 cards, which is more than the sheet’s 46 because the list is unverified). Built from the standard list, because the sheet’s Graphs section could not be read. Check the titles against your sheet.</p>
+<section class="tpl">
+<h2>The pattern: visit each node once, never twice</h2>
+<p>Almost every graph problem is a traversal with a <b>visited</b> marker. <b>BFS</b> (a queue) explores in rings, so it finds the fewest steps in an unweighted graph. <b>DFS</b> (recursion or a stack) goes deep first, which suits connected components, cycles and “can I reach…” questions.</p>
+<p><b>Grids are graphs.</b> Each cell is a node with up to four neighbours (up, down, left, right). Start a traversal from every unvisited cell to count components. Start one from <i>many sources at once</i> (all rotten oranges, all zeros) to measure distance from the nearest source.</p>
+<p><b>Costs:</b> a traversal is O(V + E) with an adjacency list.</p>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const P=[
+{t:"Graph Representation (Adjacency List and Matrix)",g:"Basics",
+s:"Store a graph so that you can quickly get the neighbours of a node.",
+h:["Adjacency list: an array of lists, one per node. It uses O(V + E) space and suits most problems.","Adjacency matrix: an n × n grid where m[u][v] = 1 means an edge. It uses O(V²) space but answers “is there an edge u–v?” in O(1).","For an undirected graph add each edge in both directions. For a weighted graph store {neighbour, weight} pairs."],
+cx:"List O(V + E), matrix O(V²)",
+c:`static List<List<Integer>> buildAdjList(int n, int[][] edges) {
+    List<List<Integer>> adj = new ArrayList<>();
+    for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
+    for (int[] e : edges) {
+        adj.get(e[0]).add(e[1]);
+        adj.get(e[1]).add(e[0]);   // remove this line for a directed graph
+    }
+    return adj;
+}
+// weighted: adj.get(u).add(new int[]{v, weight});
+// matrix:   int[][] m = new int[n][n];  m[u][v] = 1;`},
+{t:"Breadth-First Search (BFS)",g:"Basics",
+s:"Visit nodes level by level starting from a node.",
+h:["Use a queue. Mark a node visited when you push it, not when you pop it, so it is never queued twice.","Pop a node, record it, and push its unvisited neighbours."],
+cx:"O(V + E), O(V)",
+c:`static List<Integer> bfs(int n, List<List<Integer>> adj, int start) {
+    List<Integer> order = new ArrayList<>();
+    boolean[] visited = new boolean[n];
+    Queue<Integer> q = new ArrayDeque<>();
+    q.offer(start);
+    visited[start] = true;
+    while (!q.isEmpty()) {
+        int node = q.poll();
+        order.add(node);
+        for (int next : adj.get(node)) {
+            if (!visited[next]) {
+                visited[next] = true;
+                q.offer(next);
+            }
+        }
+    }
+    return order;
+}`},
+{t:"Depth-First Search (DFS)",g:"Basics",
+s:"Visit nodes by going as deep as possible before backtracking.",
+h:["Mark the node visited, then recurse into each unvisited neighbour.","For a disconnected graph, call DFS from every node that is still unvisited."],
+cx:"O(V + E), O(V) stack",
+c:`static void dfs(int node, List<List<Integer>> adj,
+                boolean[] visited, List<Integer> order) {
+    visited[node] = true;
+    order.add(node);
+    for (int next : adj.get(node))
+        if (!visited[next]) dfs(next, adj, visited, order);
+}`},
+{t:"Number of Provinces",g:"Grid / components",
+s:"isConnected[i][j] = 1 means cities i and j are directly connected. Count the groups of connected cities.",
+h:["Each group is a connected component.","Loop over the cities. Each time you find an unvisited city, count one new province and DFS to mark its whole group."],
+cx:"O(V²) with a matrix",
+c:`static int findCircleNum(int[][] isConnected) {
+    int n = isConnected.length, count = 0;
+    boolean[] visited = new boolean[n];
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) {
+            count++;                         // a new component starts here
+            dfsMatrix(i, isConnected, visited);
+        }
+    }
+    return count;
+}
+static void dfsMatrix(int node, int[][] g, boolean[] visited) {
+    visited[node] = true;
+    for (int j = 0; j < g.length; j++)
+        if (g[node][j] == 1 && !visited[j]) dfsMatrix(j, g, visited);
+}`},
+{t:"Number of Islands",g:"Grid / components",
+s:"A grid of 1 (land) and 0 (water). Count the islands.",
+h:["Scan every cell. When you meet land, count one island and DFS to turn the whole island into water, so it is not counted again.","This uses 4 directions (LeetCode). If your version also counts diagonal neighbours, add four more recursive calls for the diagonals."],
+cx:"O(rows × cols)",
+c:`static int numIslands(char[][] grid) {
+    int count = 0;
+    for (int i = 0; i < grid.length; i++)
+        for (int j = 0; j < grid[0].length; j++)
+            if (grid[i][j] == '1') {
+                count++;
+                sink(grid, i, j);             // erase the whole island
+            }
+    return count;
+}
+static void sink(char[][] g, int i, int j) {
+    if (i < 0 || j < 0 || i >= g.length || j >= g[0].length
+            || g[i][j] != '1') return;
+    g[i][j] = '0';
+    sink(g, i + 1, j);
+    sink(g, i - 1, j);
+    sink(g, i, j + 1);
+    sink(g, i, j - 1);
+}`},
+{t:"Flood Fill",g:"Grid / components",
+s:"Starting at pixel (sr, sc), recolour it and every connected pixel of the same colour.",
+h:["Remember the starting colour. If it already equals the new colour, do nothing, or the recursion would never end.","DFS in four directions, recolouring pixels that still have the old colour."],
+cx:"O(rows × cols)",
+c:`static int[][] floodFill(int[][] image, int sr, int sc, int color) {
+    int old = image[sr][sc];
+    if (old != color) fill(image, sr, sc, old, color);
+    return image;
+}
+static void fill(int[][] img, int i, int j, int old, int color) {
+    if (i < 0 || j < 0 || i >= img.length || j >= img[0].length
+            || img[i][j] != old) return;
+    img[i][j] = color;
+    fill(img, i + 1, j, old, color);
+    fill(img, i - 1, j, old, color);
+    fill(img, i, j + 1, old, color);
+    fill(img, i, j - 1, old, color);
+}`},
+{t:"Rotten Oranges",g:"Shortest steps (BFS)",
+s:"Each minute, every rotten orange (2) rots its fresh (1) neighbours. Find the minutes until none are fresh, or −1.",
+h:["Multi-source BFS: start the queue with every rotten orange at once. Count the fresh ones.","Process the queue one level at a time. Each level is one minute.","If fresh oranges remain at the end, some were unreachable, so return −1."],
+cx:"O(rows × cols)",
+c:`static int orangesRotting(int[][] grid) {
+    int n = grid.length, m = grid[0].length, fresh = 0;
+    Queue<int[]> q = new ArrayDeque<>();
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++) {
+            if (grid[i][j] == 2) q.offer(new int[]{i, j});
+            else if (grid[i][j] == 1) fresh++;
+        }
+    int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    int minutes = 0;
+    while (!q.isEmpty() && fresh > 0) {
+        int size = q.size();                  // one minute passes
+        for (int k = 0; k < size; k++) {
+            int[] cur = q.poll();
+            for (int[] d : dirs) {
+                int r = cur[0] + d[0], c = cur[1] + d[1];
+                if (r >= 0 && c >= 0 && r < n && c < m && grid[r][c] == 1) {
+                    grid[r][c] = 2;
+                    fresh--;
+                    q.offer(new int[]{r, c});
+                }
+            }
+        }
+        minutes++;
+    }
+    return fresh == 0 ? minutes : -1;
+}`},
+{t:"Detect a Cycle in an Undirected Graph (BFS)",g:"Cycles and colouring",
+s:"Does the undirected graph contain a cycle?",
+h:["Queue entries carry the node and the node it came from (its parent).","If a neighbour is already visited and is not the parent, you have found another path to it, which means a cycle.","Run it from every unvisited node, since the graph may be disconnected."],
+cx:"O(V + E)",
+c:`static boolean hasCycleBFS(int n, List<List<Integer>> adj) {
+    boolean[] visited = new boolean[n];
+    for (int s = 0; s < n; s++) {
+        if (visited[s]) continue;
+        Queue<int[]> q = new ArrayDeque<>();   // {node, parent}
+        q.offer(new int[]{s, -1});
+        visited[s] = true;
+        while (!q.isEmpty()) {
+            int[] cur = q.poll();
+            for (int next : adj.get(cur[0])) {
+                if (!visited[next]) {
+                    visited[next] = true;
+                    q.offer(new int[]{next, cur[0]});
+                } else if (next != cur[1]) {
+                    return true;               // visited and not the parent
+                }
+            }
+        }
+    }
+    return false;
+}`},
+{t:"Detect a Cycle in an Undirected Graph (DFS)",g:"Cycles and colouring",
+s:"Same problem, using DFS.",
+h:["Pass the parent into each recursive call.","A visited neighbour that is not the parent closes a cycle."],
+cx:"O(V + E)",
+c:`static boolean hasCycleDFS(int n, List<List<Integer>> adj) {
+    boolean[] visited = new boolean[n];
+    for (int s = 0; s < n; s++)
+        if (!visited[s] && dfsCycle(s, -1, adj, visited)) return true;
+    return false;
+}
+static boolean dfsCycle(int node, int parent,
+                        List<List<Integer>> adj, boolean[] visited) {
+    visited[node] = true;
+    for (int next : adj.get(node)) {
+        if (!visited[next]) {
+            if (dfsCycle(next, node, adj, visited)) return true;
+        } else if (next != parent) {
+            return true;
+        }
+    }
+    return false;
+}`},
+{t:"Distance of the Nearest 0 (01 Matrix)",g:"Shortest steps (BFS)",
+s:"For every cell, find the distance to the nearest 0. (If your version asks for the nearest 1, swap the roles.)",
+h:["Multi-source BFS from all zeros at the same time. Their distance is 0.","Each unvisited neighbour gets the current distance + 1. The first time a cell is reached is the shortest distance."],
+cx:"O(rows × cols)",
+c:`static int[][] updateMatrix(int[][] mat) {
+    int n = mat.length, m = mat[0].length;
+    int[][] dist = new int[n][m];
+    Queue<int[]> q = new ArrayDeque<>();
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++) {
+            if (mat[i][j] == 0) q.offer(new int[]{i, j});
+            else dist[i][j] = -1;              // not reached yet
+        }
+    int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    while (!q.isEmpty()) {
+        int[] cur = q.poll();
+        for (int[] d : dirs) {
+            int r = cur[0] + d[0], c = cur[1] + d[1];
+            if (r >= 0 && c >= 0 && r < n && c < m && dist[r][c] == -1) {
+                dist[r][c] = dist[cur[0]][cur[1]] + 1;
+                q.offer(new int[]{r, c});
+            }
+        }
+    }
+    return dist;
+}`},
+{t:"Surrounded Regions",g:"Grid / components",
+s:"Flip every region of O that is completely surrounded by X into X. O regions touching the border stay.",
+h:["Think in reverse: the O cells that survive are exactly those connected to a border O.","DFS from every border O and mark them safe (#). Then flip the remaining O to X, and turn # back to O."],
+cx:"O(rows × cols)",
+c:`static void solve(char[][] board) {
+    int n = board.length, m = board[0].length;
+    for (int i = 0; i < n; i++) {
+        mark(board, i, 0);
+        mark(board, i, m - 1);
+    }
+    for (int j = 0; j < m; j++) {
+        mark(board, 0, j);
+        mark(board, n - 1, j);
+    }
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++) {
+            if (board[i][j] == 'O') board[i][j] = 'X';        // surrounded
+            else if (board[i][j] == '#') board[i][j] = 'O';   // safe
+        }
+}
+static void mark(char[][] b, int i, int j) {
+    if (i < 0 || j < 0 || i >= b.length || j >= b[0].length
+            || b[i][j] != 'O') return;
+    b[i][j] = '#';
+    mark(b, i + 1, j);
+    mark(b, i - 1, j);
+    mark(b, i, j + 1);
+    mark(b, i, j - 1);
+}`},
+{t:"Number of Enclaves",g:"Grid / components",
+s:"Count land cells (1) from which you cannot walk off the grid edge.",
+h:["Same reverse idea as Surrounded Regions: remove all land connected to a border land cell.","Whatever land is left is enclosed, so count it."],
+cx:"O(rows × cols)",
+c:`static int numEnclaves(int[][] grid) {
+    int n = grid.length, m = grid[0].length;
+    for (int i = 0; i < n; i++) {
+        erase(grid, i, 0);
+        erase(grid, i, m - 1);
+    }
+    for (int j = 0; j < m; j++) {
+        erase(grid, 0, j);
+        erase(grid, n - 1, j);
+    }
+    int count = 0;
+    for (int[] row : grid)
+        for (int cell : row) count += cell;
+    return count;
+}
+static void erase(int[][] g, int i, int j) {
+    if (i < 0 || j < 0 || i >= g.length || j >= g[0].length
+            || g[i][j] != 1) return;
+    g[i][j] = 0;
+    erase(g, i + 1, j);
+    erase(g, i - 1, j);
+    erase(g, i, j + 1);
+    erase(g, i, j - 1);
+}`},
+{t:"Word Ladder I",g:"Shortest steps (BFS)",
+s:"Change one letter at a time, each step giving a word in the list. Find the length of the shortest sequence from beginWord to endWord (counting both), or 0.",
+h:["Words are nodes. Two words are linked if they differ by one letter. We want the shortest path, so use BFS.","For each word, try replacing each position with a–z, and keep the results that are in the word set.","Removing a word from the set when you queue it doubles as the visited marker."],
+cx:"O(N × L × 26) for N words of length L",
+c:`static int ladderLength(String begin, String end, List<String> wordList) {
+    Set<String> words = new HashSet<>(wordList);
+    if (!words.contains(end)) return 0;
+    Queue<String> q = new ArrayDeque<>();
+    q.offer(begin);
+    int steps = 1;
+    while (!q.isEmpty()) {
+        int size = q.size();
+        for (int k = 0; k < size; k++) {
+            String word = q.poll();
+            if (word.equals(end)) return steps;
+            char[] arr = word.toCharArray();
+            for (int i = 0; i < arr.length; i++) {
+                char orig = arr[i];
+                for (char c = 'a'; c <= 'z'; c++) {
+                    arr[i] = c;
+                    String next = new String(arr);
+                    if (words.remove(next)) q.offer(next);   // remove = visited
+                }
+                arr[i] = orig;
+            }
+        }
+        steps++;
+    }
+    return 0;
+}`},
+{t:"Bipartite Graph",g:"Cycles and colouring",
+s:"Can the nodes be coloured with two colours so that no edge joins two nodes of the same colour?",
+h:["Colour the start node 0. Give every neighbour the opposite colour.","If you ever meet a neighbour that already has the same colour as the current node, the graph is not bipartite. (This happens exactly when there is an odd-length cycle.)","Start from every uncoloured node, since the graph may be disconnected."],
+cx:"O(V + E)",
+c:`static boolean isBipartite(int[][] graph) {
+    int n = graph.length;
+    int[] color = new int[n];
+    Arrays.fill(color, -1);                    // -1 means not coloured yet
+    for (int s = 0; s < n; s++) {
+        if (color[s] != -1) continue;
+        Queue<Integer> q = new ArrayDeque<>();
+        q.offer(s);
+        color[s] = 0;
+        while (!q.isEmpty()) {
+            int node = q.poll();
+            for (int next : graph[node]) {
+                if (color[next] == -1) {
+                    color[next] = 1 - color[node];
+                    q.offer(next);
+                } else if (color[next] == color[node]) {
+                    return false;              // both ends of an edge match
+                }
+            }
+        }
+    }
+    return true;
+}`},
+{t:"Number of Distinct Islands",g:"Grid / components",
+s:"Count islands that have different shapes. Two islands are the same if one is a translation of the other (no rotation or reflection).",
+h:["DFS each island and record the position of every cell relative to the island’s first cell (its base).","Use the same direction order every time, so identical shapes give identical strings. Store the strings in a set and return its size."],
+cx:"O(rows \u00d7 cols)",
+c:`static int numDistinctIslands(int[][] grid) {
+    Set<String> shapes = new HashSet<>();
+    for (int i = 0; i < grid.length; i++)
+        for (int j = 0; j < grid[0].length; j++)
+            if (grid[i][j] == 1) {
+                StringBuilder sb = new StringBuilder();
+                explore(grid, i, j, i, j, sb);
+                shapes.add(sb.toString());
+            }
+    return shapes.size();
+}
+static void explore(int[][] g, int i, int j, int bi, int bj, StringBuilder sb) {
+    if (i < 0 || j < 0 || i >= g.length || j >= g[0].length
+            || g[i][j] != 1) return;
+    g[i][j] = 0;
+    sb.append(i - bi).append(',').append(j - bj).append(';');   // relative to the base cell
+    explore(g, i + 1, j, bi, bj, sb);
+    explore(g, i - 1, j, bi, bj, sb);
+    explore(g, i, j + 1, bi, bj, sb);
+    explore(g, i, j - 1, bi, bj, sb);
+}`},
+{t:"Word Ladder II",g:"Shortest steps (BFS)",
+s:"Return all shortest transformation sequences from beginWord to endWord.",
+h:["BFS level by level, removing the previous level’s words from the set, so later levels cannot reach back. For every word reached, record which words led to it (its parents on shortest paths).","Stop at the level where endWord is found.","Then walk back from endWord through the parents (DFS) to rebuild every shortest path."],
+cx:"Depends on the number of shortest paths",
+c:`static List<List<String>> findLadders(String begin, String end, List<String> wordList) {
+    Set<String> words = new HashSet<>(wordList);
+    List<List<String>> res = new ArrayList<>();
+    if (!words.contains(end)) return res;
+    Map<String, List<String>> parents = new HashMap<>();   // word -> words before it
+    Set<String> level = new HashSet<>();
+    level.add(begin);
+    boolean found = false;
+    while (!level.isEmpty() && !found) {
+        words.removeAll(level);                   // earlier levels are finished
+        Set<String> nextLevel = new HashSet<>();
+        for (String word : level) {
+            char[] arr = word.toCharArray();
+            for (int i = 0; i < arr.length; i++) {
+                char orig = arr[i];
+                for (char c = 'a'; c <= 'z'; c++) {
+                    arr[i] = c;
+                    String next = new String(arr);
+                    if (words.contains(next)) {
+                        parents.computeIfAbsent(next, k -> new ArrayList<>()).add(word);
+                        nextLevel.add(next);
+                        if (next.equals(end)) found = true;
+                    }
+                }
+                arr[i] = orig;
+            }
+        }
+        level = nextLevel;
+    }
+    if (found) {
+        LinkedList<String> path = new LinkedList<>();
+        path.add(end);
+        buildPaths(end, begin, parents, path, res);
+    }
+    return res;
+}
+static void buildPaths(String word, String begin, Map<String, List<String>> parents,
+                       LinkedList<String> path, List<List<String>> res) {
+    if (word.equals(begin)) {
+        res.add(new ArrayList<>(path));
+        return;
+    }
+    for (String p : parents.getOrDefault(word, new ArrayList<>())) {
+        path.addFirst(p);
+        buildPaths(p, begin, parents, path, res);
+        path.removeFirst();                       // backtrack
+    }
+}`},
+{t:"Detect a Cycle in a Directed Graph (DFS)",g:"Directed graphs",
+s:"Does the directed graph contain a cycle?",
+h:["In a directed graph, meeting a visited node is not enough: it must be on the current DFS path."],
+cx:"O(V + E)",
+c:`static boolean hasCycleDirected(int n, List<List<Integer>> adj) {
+    int[] state = new int[n];   // 0 = new, 1 = on the current path, 2 = finished
+    for (int i = 0; i < n; i++)
+        if (state[i] == 0 && cycleDfs(i, adj, state)) return true;
+    return false;
+}
+static boolean cycleDfs(int node, List<List<Integer>> adj, int[] state) {
+    state[node] = 1;
+    for (int next : adj.get(node)) {
+        if (state[next] == 1) return true;       // back to a node on the current path
+        if (state[next] == 0 && cycleDfs(next, adj, state)) return true;
+    }
+    state[node] = 2;                             // fully explored, no cycle through it
+    return false;
+}`},
+{t:"Find Eventual Safe States",g:"Directed graphs",
+s:"A node is safe if every path from it ends at a terminal node (one with no outgoing edges). Return all safe nodes in order.",
+h:["A node is unsafe if it is in a cycle or can reach one.","DFS with three states. If you meet a node that is still on the current path, there is a cycle, so everything on the path is unsafe.","A node whose neighbours are all safe is safe too."],
+cx:"O(V + E)",
+c:`static List<Integer> eventualSafeNodes(int[][] graph) {
+    int n = graph.length;
+    int[] state = new int[n];   // 0 = new, 1 = visiting, 2 = safe
+    List<Integer> res = new ArrayList<>();
+    for (int i = 0; i < n; i++)
+        if (isSafe(i, graph, state)) res.add(i);
+    return res;
+}
+static boolean isSafe(int node, int[][] graph, int[] state) {
+    if (state[node] != 0) return state[node] == 2;   // visiting means a cycle
+    state[node] = 1;
+    for (int next : graph[node])
+        if (!isSafe(next, graph, state)) return false;
+    state[node] = 2;
+    return true;
+}`},
+{t:"Topological Sort (DFS)",g:"Topological sort",
+s:"Order the nodes of a directed acyclic graph so every edge u → v has u before v.",
+h:["Run DFS. After a node has finished (everything it points to is done), push it onto a stack.","Popping the stack gives a valid order: each node appears before everything it points to."],
+cx:"O(V + E)",
+c:`static int[] topoSortDFS(int n, List<List<Integer>> adj) {
+    boolean[] visited = new boolean[n];
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = 0; i < n; i++)
+        if (!visited[i]) topoDfs(i, adj, visited, stack);
+    int[] order = new int[n];
+    for (int i = 0; i < n; i++) order[i] = stack.pop();
+    return order;
+}
+static void topoDfs(int node, List<List<Integer>> adj,
+                    boolean[] visited, Deque<Integer> stack) {
+    visited[node] = true;
+    for (int next : adj.get(node))
+        if (!visited[next]) topoDfs(next, adj, visited, stack);
+    stack.push(node);          // after everything it points to is done
+}`},
+{t:"Kahn’s Algorithm (Topological Sort Using BFS)",g:"Topological sort",
+s:"Topological order using in-degrees.",
+h:["In-degree = number of edges coming into a node. Nodes with in-degree 0 have no prerequisites, so queue them first.","Pop a node, add it to the order, and reduce the in-degree of its neighbours. Queue any that reach 0.","If fewer than n nodes were processed, the graph has a cycle."],
+cx:"O(V + E)",
+c:`static int[] topoSortKahn(int n, List<List<Integer>> adj) {
+    int[] indegree = new int[n];
+    for (int u = 0; u < n; u++)
+        for (int v : adj.get(u)) indegree[v]++;
+    Queue<Integer> q = new ArrayDeque<>();
+    for (int i = 0; i < n; i++)
+        if (indegree[i] == 0) q.offer(i);
+    int[] order = new int[n];
+    int count = 0;
+    while (!q.isEmpty()) {
+        int node = q.poll();
+        order[count++] = node;
+        for (int next : adj.get(node))
+            if (--indegree[next] == 0) q.offer(next);   // its prerequisites are done
+    }
+    return count == n ? order : new int[0];    // fewer than n means a cycle
+}`},
+{t:"Detect a Cycle in a Directed Graph (BFS / Kahn)",g:"Topological sort",
+s:"Detect a directed cycle using Kahn’s algorithm.",
+h:["Nodes on a cycle never reach in-degree 0, so Kahn’s algorithm cannot process them.","If the number of processed nodes is less than n, there is a cycle."],
+cx:"O(V + E)",
+c:`static boolean hasCycleKahn(int n, List<List<Integer>> adj) {
+    return topoSortKahn(n, adj).length != n;    // empty result means a cycle
+}`},
+{t:"Course Schedule I",g:"Topological sort",
+s:"prerequisites[i] = {a, b} means take b before a. Can all courses be finished?",
+h:["Build a graph with an edge b → a for each pair.","All courses can be finished exactly when the graph has no cycle, so run Kahn’s algorithm and check that every course was processed."],
+cx:"O(V + E)",
+c:`static List<List<Integer>> buildCourseGraph(int n, int[][] prerequisites) {
+    List<List<Integer>> adj = new ArrayList<>();
+    for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
+    for (int[] p : prerequisites) adj.get(p[1]).add(p[0]);   // b -> a
+    return adj;
+}
+static boolean canFinish(int n, int[][] prerequisites) {
+    return topoSortKahn(n, buildCourseGraph(n, prerequisites)).length == n;
+}`},
+{t:"Course Schedule II",g:"Topological sort",
+s:"Return an order in which the courses can be taken, or an empty array if it is impossible.",
+h:["Same graph as Course Schedule I. The topological order is the answer, and Kahn’s algorithm already returns an empty array on a cycle."],
+cx:"O(V + E)",
+c:`static int[] findOrder(int n, int[][] prerequisites) {
+    return topoSortKahn(n, buildCourseGraph(n, prerequisites));
+}`},
+{t:"Alien Dictionary",g:"Topological sort",
+s:"Words are sorted in an unknown alphabet. Work out the order of the letters.",
+h:["Compare each pair of adjacent words. The first position where they differ gives one rule: letter x comes before letter y.","If a longer word comes before its own prefix (abc before ab), the input is invalid.","Topologically sort the letters with Kahn’s algorithm. If some letters are never processed, there is a cycle, so return an empty string."],
+cx:"O(total characters)",
+c:`static String alienOrder(String[] words) {
+    Map<Character, Set<Character>> adj = new HashMap<>();
+    Map<Character, Integer> indegree = new HashMap<>();
+    for (String w : words)
+        for (char c : w.toCharArray()) {
+            adj.putIfAbsent(c, new HashSet<>());
+            indegree.putIfAbsent(c, 0);
+        }
+    for (int i = 0; i + 1 < words.length; i++) {
+        String a = words[i], b = words[i + 1];
+        if (a.length() > b.length() && a.startsWith(b)) return "";   // invalid order
+        for (int j = 0; j < Math.min(a.length(), b.length()); j++) {
+            char x = a.charAt(j), y = b.charAt(j);
+            if (x != y) {                    // first difference: x comes before y
+                if (adj.get(x).add(y)) indegree.merge(y, 1, Integer::sum);
+                break;
+            }
+        }
+    }
+    Queue<Character> q = new ArrayDeque<>();
+    for (char c : indegree.keySet())
+        if (indegree.get(c) == 0) q.offer(c);
+    StringBuilder sb = new StringBuilder();
+    while (!q.isEmpty()) {
+        char c = q.poll();
+        sb.append(c);
+        for (char next : adj.get(c))
+            if (indegree.merge(next, -1, Integer::sum) == 0) q.offer(next);
+    }
+    return sb.length() == indegree.size() ? sb.toString() : "";   // shorter means a cycle
+}`},
+{t:"Shortest Path in an Undirected Graph with Unit Weights",g:"Shortest paths",
+s:"Every edge has weight 1. Find the shortest distance from a source to every node (−1 if unreachable).",
+h:["BFS explores in rings, so the first time you reach a node is by the fewest edges.","Store the distance when you first set it. A distance of −1 doubles as the visited marker."],
+cx:"O(V + E)",
+c:`static int[] shortestPathUnit(int n, List<List<Integer>> adj, int src) {
+    int[] dist = new int[n];
+    Arrays.fill(dist, -1);
+    Queue<Integer> q = new ArrayDeque<>();
+    dist[src] = 0;
+    q.offer(src);
+    while (!q.isEmpty()) {
+        int node = q.poll();
+        for (int next : adj.get(node)) {
+            if (dist[next] == -1) {
+                dist[next] = dist[node] + 1;
+                q.offer(next);
+            }
+        }
+    }
+    return dist;
+}`},
+{t:"Shortest Path in a Directed Acyclic Graph",g:"Shortest paths",
+s:"A weighted DAG. Find the shortest distance from a source to every node (−1 if unreachable).",
+h:["Take a topological order. Every node is then processed after all the nodes that can lead to it.","Go through the nodes in that order and relax each outgoing edge. One pass is enough, so it is faster than Dijkstra.","Skip nodes that are still unreachable."],
+cx:"O(V + E)",
+c:`static int[] shortestPathDAG(int n, List<List<int[]>> adj, int src) {
+    boolean[] visited = new boolean[n];
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = 0; i < n; i++)
+        if (!visited[i]) topoWeighted(i, adj, visited, stack);
+    int INF = Integer.MAX_VALUE;
+    int[] dist = new int[n];
+    Arrays.fill(dist, INF);
+    dist[src] = 0;
+    while (!stack.isEmpty()) {
+        int u = stack.pop();
+        if (dist[u] == INF) continue;          // not reachable from src
+        for (int[] e : adj.get(u))             // e = {neighbour, weight}
+            if (dist[u] + e[1] < dist[e[0]]) dist[e[0]] = dist[u] + e[1];
+    }
+    for (int i = 0; i < n; i++)
+        if (dist[i] == INF) dist[i] = -1;
+    return dist;
+}
+static void topoWeighted(int node, List<List<int[]>> adj,
+                         boolean[] visited, Deque<Integer> stack) {
+    visited[node] = true;
+    for (int[] e : adj.get(node))
+        if (!visited[e[0]]) topoWeighted(e[0], adj, visited, stack);
+    stack.push(node);
+}`},
+{t:"Dijkstra’s Algorithm (Priority Queue)",g:"Shortest paths",
+s:"Shortest distance from a source to every node in a graph with non-negative weights.",
+h:["Keep a min-heap of {distance, node}. Always take the closest unfinished node.","For each edge u → v, if going through u is shorter, update dist[v] and push it.","A node can be pushed several times. When you pop an entry whose distance is already worse than dist[u], skip it.","It fails with negative edges, because a finished node can no longer be improved."],
+cx:"O((V + E) log V)",
+c:`static int[] dijkstra(int n, List<List<int[]>> adj, int src) {
+    int[] dist = new int[n];
+    Arrays.fill(dist, Integer.MAX_VALUE);
+    dist[src] = 0;
+    PriorityQueue<int[]> pq =
+        new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));   // {distance, node}
+    pq.offer(new int[]{0, src});
+    while (!pq.isEmpty()) {
+        int[] cur = pq.poll();
+        int d = cur[0], u = cur[1];
+        if (d > dist[u]) continue;               // outdated entry
+        for (int[] e : adj.get(u)) {
+            int v = e[0], w = e[1];
+            if (d + w < dist[v]) {
+                dist[v] = d + w;
+                pq.offer(new int[]{dist[v], v});
+            }
+        }
+    }
+    return dist;
+}`},
+{t:"Dijkstra’s Algorithm (Using a Set)",g:"Shortest paths",
+s:"The same algorithm, with a sorted set instead of a heap.",
+h:["A TreeSet ordered by (distance, node) lets you delete an old entry when a better distance is found, so no stale entries are left.","Everything else is identical to the priority queue version."],
+cx:"O((V + E) log V)",
+c:`static int[] dijkstraSet(int n, List<List<int[]>> adj, int src) {
+    int[] dist = new int[n];
+    Arrays.fill(dist, Integer.MAX_VALUE);
+    dist[src] = 0;
+    TreeSet<int[]> set = new TreeSet<>((a, b) ->
+        a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[1], b[1]));
+    set.add(new int[]{0, src});
+    while (!set.isEmpty()) {
+        int[] cur = set.pollFirst();
+        int d = cur[0], u = cur[1];
+        for (int[] e : adj.get(u)) {
+            int v = e[0], w = e[1];
+            if (d + w < dist[v]) {
+                if (dist[v] != Integer.MAX_VALUE)
+                    set.remove(new int[]{dist[v], v});   // drop the old entry
+                dist[v] = d + w;
+                set.add(new int[]{dist[v], v});
+            }
+        }
+    }
+    return dist;
+}`},
+{t:"Print the Shortest Path",g:"Shortest paths",
+s:"Return the actual shortest path from src to dest, not just its length.",
+h:["Run Dijkstra, and whenever dist[v] improves through u, set parent[v] = u.","Walk back from dest through the parents to src, adding each node at the front of the path.","If dest was never reached, there is no path."],
+cx:"O((V + E) log V)",
+c:`static List<Integer> shortestPath(int n, List<List<int[]>> adj, int src, int dest) {
+    int[] dist = new int[n], parent = new int[n];
+    Arrays.fill(dist, Integer.MAX_VALUE);
+    for (int i = 0; i < n; i++) parent[i] = i;
+    dist[src] = 0;
+    PriorityQueue<int[]> pq =
+        new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));
+    pq.offer(new int[]{0, src});
+    while (!pq.isEmpty()) {
+        int[] cur = pq.poll();
+        int d = cur[0], u = cur[1];
+        if (d > dist[u]) continue;
+        for (int[] e : adj.get(u)) {
+            int v = e[0], w = e[1];
+            if (d + w < dist[v]) {
+                dist[v] = d + w;
+                parent[v] = u;                  // remember how we got here
+                pq.offer(new int[]{dist[v], v});
+            }
+        }
+    }
+    if (dist[dest] == Integer.MAX_VALUE) return Arrays.asList(-1);
+    LinkedList<Integer> path = new LinkedList<>();
+    for (int node = dest; ; node = parent[node]) {
+        path.addFirst(node);
+        if (node == src) break;
+    }
+    return path;
+}`},
+{t:"Shortest Path in a Binary Maze",g:"Shortest paths",
+s:"A grid of 0 and 1, where you may only step on 1. Find the fewest steps from a source cell to a destination cell (4 directions), or −1.",
+h:["Every step costs 1, so plain BFS on the grid gives the shortest path.","Store the distance for each cell. Return as soon as the destination is reached."],
+cx:"O(rows \u00d7 cols)",
+c:`static int shortestPathBinaryMaze(int[][] grid, int[] src, int[] dest) {
+    int n = grid.length, m = grid[0].length;
+    if (src[0] == dest[0] && src[1] == dest[1]) return 0;
+    int[][] dist = new int[n][m];
+    for (int[] row : dist) Arrays.fill(row, -1);
+    Queue<int[]> q = new ArrayDeque<>();
+    dist[src[0]][src[1]] = 0;
+    q.offer(src);
+    int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    while (!q.isEmpty()) {
+        int[] cur = q.poll();
+        for (int[] d : dirs) {
+            int r = cur[0] + d[0], c = cur[1] + d[1];
+            if (r >= 0 && c >= 0 && r < n && c < m
+                    && grid[r][c] == 1 && dist[r][c] == -1) {
+                dist[r][c] = dist[cur[0]][cur[1]] + 1;
+                if (r == dest[0] && c == dest[1]) return dist[r][c];
+                q.offer(new int[]{r, c});
+            }
+        }
+    }
+    return -1;
+}`},
+{t:"Path with Minimum Effort",g:"Shortest paths",
+s:"Move from the top-left to the bottom-right of a height grid. The effort of a path is the largest height difference between two consecutive cells. Minimise it.",
+h:["Dijkstra on the grid, but the cost of a path is the maximum step so far, not the sum.","For a neighbour, newEffort = max(effort so far, |height difference|). If that beats the stored value, update it and push.","The first time you pop the bottom-right cell, its effort is the answer."],
+cx:"O(rows \u00d7 cols \u00d7 log(rows \u00d7 cols))",
+c:`static int minimumEffortPath(int[][] heights) {
+    int n = heights.length, m = heights[0].length;
+    int[][] effort = new int[n][m];
+    for (int[] row : effort) Arrays.fill(row, Integer.MAX_VALUE);
+    effort[0][0] = 0;
+    PriorityQueue<int[]> pq =
+        new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));   // {effort, row, col}
+    pq.offer(new int[]{0, 0, 0});
+    int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    while (!pq.isEmpty()) {
+        int[] cur = pq.poll();
+        int e = cur[0], r = cur[1], c = cur[2];
+        if (e > effort[r][c]) continue;
+        if (r == n - 1 && c == m - 1) return e;
+        for (int[] d : dirs) {
+            int nr = r + d[0], nc = c + d[1];
+            if (nr < 0 || nc < 0 || nr >= n || nc >= m) continue;
+            int ne = Math.max(e, Math.abs(heights[nr][nc] - heights[r][c]));
+            if (ne < effort[nr][nc]) {
+                effort[nr][nc] = ne;
+                pq.offer(new int[]{ne, nr, nc});
+            }
+        }
+    }
+    return 0;
+}`},
+{t:"Cheapest Flights Within K Stops",g:"Shortest paths",
+s:"Flights are {from, to, price}. Find the cheapest price from src to dst using at most k stops (so at most k + 1 flights), or −1.",
+h:["Dijkstra can fail here, because the cheapest route may use too many stops. Count stops instead.","Bellman-Ford with k + 1 rounds: in each round, allow one more flight. Relax using the previous round’s prices only (a copy), so a round never uses two flights."],
+cx:"O(k \u00d7 E)",
+c:`static int findCheapestPrice(int n, int[][] flights, int src, int dst, int k) {
+    int INF = Integer.MAX_VALUE;
+    int[] dist = new int[n];
+    Arrays.fill(dist, INF);
+    dist[src] = 0;
+    for (int i = 0; i <= k; i++) {            // at most k + 1 flights
+        int[] next = dist.clone();            // read old prices, write new ones
+        for (int[] f : flights) {
+            int u = f[0], v = f[1], w = f[2];
+            if (dist[u] != INF && dist[u] + w < next[v])
+                next[v] = dist[u] + w;
+        }
+        dist = next;
+    }
+    return dist[dst] == INF ? -1 : dist[dst];
+}`},
+{t:"Network Delay Time",g:"Shortest paths",
+s:"times[i] = {u, v, w} is a directed edge. A signal starts at node k (nodes are 1 to n). How long until all nodes receive it, or −1?",
+h:["Run Dijkstra from k. The signal reaches the farthest node last, so the answer is the largest distance.","If any node is unreachable, return −1.","Nodes are numbered from 1, so build the graph with n + 1 slots and ignore slot 0."],
+cx:"O((V + E) log V)",
+c:`static int networkDelayTime(int[][] times, int n, int k) {
+    List<List<int[]>> adj = new ArrayList<>();
+    for (int i = 0; i <= n; i++) adj.add(new ArrayList<>());
+    for (int[] t : times) adj.get(t[0]).add(new int[]{t[1], t[2]});
+    int[] dist = dijkstra(n + 1, adj, k);     // from the Dijkstra card
+    int max = 0;
+    for (int i = 1; i <= n; i++) {
+        if (dist[i] == Integer.MAX_VALUE) return -1;
+        max = Math.max(max, dist[i]);
+    }
+    return max;
+}`},
+{t:"Number of Ways to Arrive at Destination",g:"Shortest paths",
+s:"Roads are {u, v, time} (undirected). Count the number of different shortest-time paths from node 0 to node n − 1, modulo 1e9 + 7.",
+h:["Run Dijkstra and keep a ways[] array next to dist[].","If you find a strictly shorter way to v, set ways[v] = ways[u]. If you find an equally short way, add: ways[v] += ways[u].","Use long for distances, since sums can be large."],
+cx:"O((V + E) log V)",
+c:`static int countPaths(int n, int[][] roads) {
+    final int MOD = 1_000_000_007;
+    List<List<long[]>> adj = new ArrayList<>();
+    for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
+    for (int[] r : roads) {
+        adj.get(r[0]).add(new long[]{r[1], r[2]});
+        adj.get(r[1]).add(new long[]{r[0], r[2]});
+    }
+    long[] dist = new long[n];
+    Arrays.fill(dist, Long.MAX_VALUE);
+    int[] ways = new int[n];
+    dist[0] = 0;
+    ways[0] = 1;
+    PriorityQueue<long[]> pq =
+        new PriorityQueue<>((a, b) -> Long.compare(a[0], b[0]));
+    pq.offer(new long[]{0, 0});
+    while (!pq.isEmpty()) {
+        long[] cur = pq.poll();
+        long d = cur[0];
+        int u = (int) cur[1];
+        if (d > dist[u]) continue;
+        for (long[] e : adj.get(u)) {
+            int v = (int) e[0];
+            long nd = d + e[1];
+            if (nd < dist[v]) {                    // strictly shorter: replace the count
+                dist[v] = nd;
+                ways[v] = ways[u];
+                pq.offer(new long[]{nd, v});
+            } else if (nd == dist[v]) {            // equally short: add the counts
+                ways[v] = (ways[v] + ways[u]) % MOD;
+            }
+        }
+    }
+    return ways[n - 1];
+}`},
+{t:"Minimum Multiplications to Reach End",g:"Shortest paths",
+s:"Start with a number. Each step, multiply it by any value from arr and take the result modulo 100000. Find the fewest steps to reach end, or −1.",
+h:["The numbers 0 to 99999 are the nodes, and each multiplier gives an edge. Every step costs 1, so BFS finds the answer.","Use long for the product before taking the modulo, to avoid overflow."],
+cx:"O(100000 \u00d7 arr.length)",
+c:`static int minimumMultiplications(int[] arr, int start, int end) {
+    if (start == end) return 0;
+    final int MOD = 100000;
+    int[] steps = new int[MOD];
+    Arrays.fill(steps, -1);
+    Queue<Integer> q = new ArrayDeque<>();
+    steps[start] = 0;
+    q.offer(start);
+    while (!q.isEmpty()) {
+        int cur = q.poll();
+        for (int mul : arr) {
+            int next = (int) ((long) cur * mul % MOD);
+            if (steps[next] == -1) {
+                steps[next] = steps[cur] + 1;
+                if (next == end) return steps[next];
+                q.offer(next);
+            }
+        }
+    }
+    return -1;
+}`},
+{t:"Bellman-Ford Algorithm",g:"Shortest paths",
+s:"Shortest distances from a source when edges may be negative. Detect a negative cycle.",
+h:["Relax every edge, and repeat this n − 1 times. The longest simple path has at most n − 1 edges, so that is enough.","Do one more pass. If any edge can still be relaxed, there is a negative cycle.","Skip edges whose start is unreachable, so INF does not overflow."],
+cx:"O(V \u00d7 E)",
+c:`static int[] bellmanFord(int n, int[][] edges, int src) {
+    int INF = 100000000;                       // large, but adding to it cannot overflow
+    int[] dist = new int[n];
+    Arrays.fill(dist, INF);
+    dist[src] = 0;
+    for (int i = 0; i < n - 1; i++) {
+        boolean changed = false;
+        for (int[] e : edges) {                // e = {u, v, w}
+            if (dist[e[0]] != INF && dist[e[0]] + e[2] < dist[e[1]]) {
+                dist[e[1]] = dist[e[0]] + e[2];
+                changed = true;
+            }
+        }
+        if (!changed) break;
+    }
+    for (int[] e : edges)                      // one extra pass
+        if (dist[e[0]] != INF && dist[e[0]] + e[2] < dist[e[1]])
+            return new int[]{-1};              // negative cycle
+    return dist;
+}`},
+{t:"Floyd-Warshall Algorithm",g:"Shortest paths",
+s:"Shortest distance between every pair of nodes. The matrix holds edge weights, with −1 meaning no edge.",
+h:["Try every node via as an intermediate stop. For each pair (i, j), distance = min(current, i → via + via → j).","The via loop must be the outermost loop.","A negative number on the diagonal afterwards means a negative cycle."],
+cx:"O(V\u00b3)",
+c:`static void floydWarshall(int[][] matrix) {
+    int n = matrix.length;
+    int INF = (int) 1e9;
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++) {
+            if (matrix[i][j] == -1) matrix[i][j] = INF;
+            if (i == j) matrix[i][j] = 0;
+        }
+    for (int via = 0; via < n; via++)
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                if (matrix[i][via] < INF && matrix[via][j] < INF)
+                    matrix[i][j] = Math.min(matrix[i][j],
+                                            matrix[i][via] + matrix[via][j]);
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            if (matrix[i][j] == INF) matrix[i][j] = -1;   // unreachable
+}`},
+{t:"Find the City with the Smallest Number of Neighbours at a Threshold Distance",g:"Shortest paths",
+s:"For each city, count the cities reachable within distanceThreshold. Return the city with the fewest. On a tie, return the largest index.",
+h:["Compute all-pairs shortest distances with Floyd-Warshall.","Count, for each city, the others within the threshold.","Use <= when comparing counts, so a later (larger-index) city wins ties."],
+cx:"O(V\u00b3)",
+c:`static int findTheCity(int n, int[][] edges, int distanceThreshold) {
+    int INF = (int) 1e9;
+    int[][] dist = new int[n][n];
+    for (int[] row : dist) Arrays.fill(row, INF);
+    for (int i = 0; i < n; i++) dist[i][i] = 0;
+    for (int[] e : edges) {
+        dist[e[0]][e[1]] = e[2];
+        dist[e[1]][e[0]] = e[2];
+    }
+    for (int via = 0; via < n; via++)
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                if (dist[i][via] < INF && dist[via][j] < INF)
+                    dist[i][j] = Math.min(dist[i][j], dist[i][via] + dist[via][j]);
+    int best = -1, bestCount = Integer.MAX_VALUE;
+    for (int i = 0; i < n; i++) {
+        int count = 0;
+        for (int j = 0; j < n; j++)
+            if (i != j && dist[i][j] <= distanceThreshold) count++;
+        if (count <= bestCount) {              // <= so ties go to the larger index
+            bestCount = count;
+            best = i;
+        }
+    }
+    return best;
+}`},
+{t:"Disjoint Set (Union-Find)",g:"Disjoint set",
+s:"A structure that tracks which items are in the same group, supporting find and union in almost constant time.",
+h:["find(x) returns the representative (root) of x’s group. Path compression makes every node on the way point straight at the root.","union(a, b) joins two groups by attaching the smaller one under the larger (union by size). It returns false if they were already together.","With both tricks, each operation is O(α(n)), which is effectively constant. The later cards reuse this class."],
+cx:"O(α(n)) per operation",
+c:`class DisjointSet {
+    int[] parent, size;
+    DisjointSet(int n) {
+        parent = new int[n];
+        size = new int[n];
+        for (int i = 0; i < n; i++) {
+            parent[i] = i;
+            size[i] = 1;
+        }
+    }
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);   // path compression
+        return parent[x];
+    }
+    boolean union(int a, int b) {
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;                         // already together
+        if (size[ra] < size[rb]) { int t = ra; ra = rb; rb = t; }
+        parent[rb] = ra;                                    // smaller under larger
+        size[ra] += size[rb];
+        return true;
+    }
+}`},
+{t:"Number of Provinces (Disjoint Set)",g:"Disjoint set",
+s:"Count the connected groups again, this time with Union-Find.",
+h:["Start with n separate groups. Each successful union merges two groups, so it reduces the count by one."],
+cx:"O(n² × α(n))",
+c:`static int findCircleNumDSU(int[][] isConnected) {
+    int n = isConnected.length;
+    DisjointSet ds = new DisjointSet(n);
+    int components = n;
+    for (int i = 0; i < n; i++)
+        for (int j = i + 1; j < n; j++)
+            if (isConnected[i][j] == 1 && ds.union(i, j)) components--;
+    return components;
+}`},
+{t:"Minimum Spanning Tree: Prim’s Algorithm",g:"Spanning tree",
+s:"A spanning tree connects all nodes with n − 1 edges and no cycle. Find the one with the smallest total weight (connected, weighted, undirected graph).",
+h:["Grow the tree from node 0. Keep a min-heap of {weight, node} edges that leave the tree.","Pop the cheapest. If its node is already in the tree, skip it. Otherwise add it, add its weight to the total, and push its edges to nodes not yet in the tree."],
+cx:"O(E log V)",
+c:`static int primsMST(int n, List<List<int[]>> adj) {   // adj entries: {neighbour, weight}
+    boolean[] inMST = new boolean[n];
+    PriorityQueue<int[]> pq =
+        new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));   // {weight, node}
+    pq.offer(new int[]{0, 0});
+    int total = 0;
+    while (!pq.isEmpty()) {
+        int[] cur = pq.poll();
+        int w = cur[0], u = cur[1];
+        if (inMST[u]) continue;
+        inMST[u] = true;
+        total += w;
+        for (int[] e : adj.get(u))
+            if (!inMST[e[0]]) pq.offer(new int[]{e[1], e[0]});
+    }
+    return total;
+}`},
+{t:"Minimum Spanning Tree: Kruskal’s Algorithm",g:"Spanning tree",
+s:"The same problem, built from the edge list.",
+h:["Sort all edges by weight. Go through them from cheapest.","Keep an edge only if its two ends are in different groups (the union succeeds). Skipping edges within a group avoids cycles."],
+cx:"O(E log E)",
+c:`static int kruskalMST(int n, int[][] edges) {    // edges: {u, v, w}
+    Arrays.sort(edges, (a, b) -> Integer.compare(a[2], b[2]));
+    DisjointSet ds = new DisjointSet(n);
+    int total = 0;
+    for (int[] e : edges)
+        if (ds.union(e[0], e[1])) total += e[2];     // joins two separate groups
+    return total;
+}`},
+{t:"Number of Operations to Make Network Connected",g:"Disjoint set",
+s:"n computers and some cables. One operation moves a cable to join two computers. Find the minimum operations to connect everything, or −1.",
+h:["Connecting n computers needs at least n − 1 cables. If there are fewer, return −1.","Otherwise, count the connected components with Union-Find. Joining c components needs c − 1 moves, and there are enough spare cables for it."],
+cx:"O(E × α(n))",
+c:`static int makeConnected(int n, int[][] connections) {
+    if (connections.length < n - 1) return -1;       // not enough cables
+    DisjointSet ds = new DisjointSet(n);
+    int components = n;
+    for (int[] c : connections)
+        if (ds.union(c[0], c[1])) components--;
+    return components - 1;
+}`},
+{t:"Accounts Merge",g:"Disjoint set",
+s:"Each account is a name followed by emails. Accounts that share an email belong to the same person. Merge them. Emails in each result are sorted.",
+h:["Union accounts by shared emails: remember which account first had each email, and union later accounts with it.","Group every email under its final root account, in a sorted set.","Output the name of the root account followed by the sorted emails."],
+cx:"O(N log N) for N emails",
+c:`static List<List<String>> accountsMerge(List<List<String>> accounts) {
+    int n = accounts.size();
+    DisjointSet ds = new DisjointSet(n);
+    Map<String, Integer> owner = new HashMap<>();   // email -> first account with it
+    for (int i = 0; i < n; i++) {
+        for (int j = 1; j < accounts.get(i).size(); j++) {
+            String email = accounts.get(i).get(j);
+            if (owner.containsKey(email)) ds.union(i, owner.get(email));
+            else owner.put(email, i);
+        }
+    }
+    Map<Integer, TreeSet<String>> merged = new HashMap<>();
+    for (Map.Entry<String, Integer> e : owner.entrySet())
+        merged.computeIfAbsent(ds.find(e.getValue()), k -> new TreeSet<>())
+              .add(e.getKey());
+    List<List<String>> res = new ArrayList<>();
+    for (Map.Entry<Integer, TreeSet<String>> e : merged.entrySet()) {
+        List<String> row = new ArrayList<>();
+        row.add(accounts.get(e.getKey()).get(0));   // the name
+        row.addAll(e.getValue());                   // sorted emails
+        res.add(row);
+    }
+    return res;
+}`},
+{t:"Number of Islands II",g:"Disjoint set",
+s:"Land is added one cell at a time on an m × n sea. After each addition, report the number of islands.",
+h:["Adding a land cell first counts as a new island (+1).","For each land neighbour, try a union. Each successful union merges two islands, so subtract 1.","Ignore a position that is already land."],
+cx:"O(k × α) for k additions",
+c:`static List<Integer> numIslands2(int m, int n, int[][] positions) {
+    DisjointSet ds = new DisjointSet(m * n);
+    boolean[][] land = new boolean[m][n];
+    int count = 0;
+    List<Integer> res = new ArrayList<>();
+    int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    for (int[] p : positions) {
+        int r = p[0], c = p[1];
+        if (!land[r][c]) {                   // ignore a repeated position
+            land[r][c] = true;
+            count++;
+            for (int[] d : dirs) {
+                int nr = r + d[0], nc = c + d[1];
+                if (nr >= 0 && nc >= 0 && nr < m && nc < n && land[nr][nc]
+                        && ds.union(r * n + c, nr * n + nc))
+                    count--;                 // two islands became one
+            }
+        }
+        res.add(count);
+    }
+    return res;
+}`},
+{t:"Making a Large Island",g:"Disjoint set",
+s:"You may change at most one 0 to a 1. Find the size of the largest island you can get.",
+h:["Union all existing land, so each island has a root and a size.","For every 0 cell, look at its four neighbours and collect their distinct island roots. Candidate size = 1 + the sum of those islands’ sizes.","Distinct roots matter: the same island can touch the cell from two sides but must be counted once. Also handle the case where there is no 0 at all."],
+cx:"O(n² × α)",
+c:`static int largestIsland(int[][] grid) {
+    int n = grid.length;
+    DisjointSet ds = new DisjointSet(n * n);
+    int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            if (grid[i][j] == 1)
+                for (int[] d : dirs) {
+                    int r = i + d[0], c = j + d[1];
+                    if (r >= 0 && c >= 0 && r < n && c < n && grid[r][c] == 1)
+                        ds.union(i * n + j, r * n + c);
+                }
+    int best = 0;
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++) {
+            if (grid[i][j] == 1) {            // covers a grid with no zeros
+                best = Math.max(best, ds.size[ds.find(i * n + j)]);
+                continue;
+            }
+            Set<Integer> roots = new HashSet<>();
+            int total = 1;                    // the flipped cell itself
+            for (int[] d : dirs) {
+                int r = i + d[0], c = j + d[1];
+                if (r >= 0 && c >= 0 && r < n && c < n && grid[r][c] == 1) {
+                    int root = ds.find(r * n + c);
+                    if (roots.add(root)) total += ds.size[root];
+                }
+            }
+            best = Math.max(best, total);
+        }
+    return best;
+}`},
+{t:"Most Stones Removed with Same Row or Column",g:"Disjoint set",
+s:"Stones are on a grid. A stone can be removed if another stone shares its row or column. Find the maximum number of stones you can remove.",
+h:["Stones linked by a row or a column form a group, and each group can be reduced to a single stone.","Treat each row and each column as a node. A stone at (x, y) joins row x with column y. Number the columns after the rows.","Answer = total stones − number of groups."],
+cx:"O(n × α)",
+c:`static int removeStones(int[][] stones) {
+    int maxRow = 0, maxCol = 0;
+    for (int[] s : stones) {
+        maxRow = Math.max(maxRow, s[0]);
+        maxCol = Math.max(maxCol, s[1]);
+    }
+    DisjointSet ds = new DisjointSet(maxRow + maxCol + 2);
+    Set<Integer> nodes = new HashSet<>();
+    for (int[] s : stones) {
+        int row = s[0], col = s[1] + maxRow + 1;   // columns come after the rows
+        ds.union(row, col);
+        nodes.add(row);
+        nodes.add(col);
+    }
+    Set<Integer> roots = new HashSet<>();
+    for (int node : nodes) roots.add(ds.find(node));
+    return stones.length - roots.size();           // one stone stays per group
+}`},
+{t:"Kosaraju’s Algorithm (Strongly Connected Components)",g:"Advanced",
+s:"In a directed graph, count the groups of nodes that can all reach each other (strongly connected components).",
+h:["Step 1: run DFS and push each node on a stack when it finishes.","Step 2: reverse every edge.","Step 3: pop nodes from the stack. Each unvisited node starts a DFS on the reversed graph, and everything it reaches is one component."],
+cx:"O(V + E)",
+c:`static int kosaraju(int n, List<List<Integer>> adj) {
+    boolean[] visited = new boolean[n];
+    Deque<Integer> stack = new ArrayDeque<>();
+    for (int i = 0; i < n; i++)
+        if (!visited[i]) fillOrder(i, adj, visited, stack);
+    List<List<Integer>> rev = new ArrayList<>();
+    for (int i = 0; i < n; i++) rev.add(new ArrayList<>());
+    for (int u = 0; u < n; u++)
+        for (int v : adj.get(u)) rev.get(v).add(u);       // reverse every edge
+    Arrays.fill(visited, false);
+    int components = 0;
+    while (!stack.isEmpty()) {
+        int node = stack.pop();
+        if (!visited[node]) {
+            components++;
+            collect(node, rev, visited);
+        }
+    }
+    return components;
+}
+static void fillOrder(int node, List<List<Integer>> adj,
+                      boolean[] visited, Deque<Integer> stack) {
+    visited[node] = true;
+    for (int next : adj.get(node))
+        if (!visited[next]) fillOrder(next, adj, visited, stack);
+    stack.push(node);                                     // after it finishes
+}
+static void collect(int node, List<List<Integer>> g, boolean[] visited) {
+    visited[node] = true;
+    for (int next : g.get(node))
+        if (!visited[next]) collect(next, g, visited);
+}`},
+{t:"Bridges in a Graph",g:"Advanced",
+s:"A bridge is an edge whose removal disconnects the graph. Find all bridges in an undirected graph.",
+h:["DFS with two numbers per node: tin (discovery time) and low (the earliest discovery time reachable using the DFS subtree plus one back edge).","After exploring a child, if low[child] > tin[node], the child’s subtree has no way back above node, so the edge node–child is a bridge.","Skip the edge back to the parent, and use a visited neighbour (a back edge) to lower low[node]."],
+cx:"O(V + E)",
+c:`static int timer;
+static List<List<Integer>> criticalConnections(int n, List<List<Integer>> connections) {
+    List<List<Integer>> adj = new ArrayList<>();
+    for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
+    for (List<Integer> c : connections) {
+        adj.get(c.get(0)).add(c.get(1));
+        adj.get(c.get(1)).add(c.get(0));
+    }
+    int[] tin = new int[n], low = new int[n];
+    boolean[] visited = new boolean[n];
+    List<List<Integer>> bridges = new ArrayList<>();
+    timer = 0;
+    for (int i = 0; i < n; i++)
+        if (!visited[i]) bridgeDfs(i, -1, adj, visited, tin, low, bridges);
+    return bridges;
+}
+static void bridgeDfs(int node, int parent, List<List<Integer>> adj, boolean[] visited,
+                      int[] tin, int[] low, List<List<Integer>> bridges) {
+    visited[node] = true;
+    tin[node] = low[node] = timer++;
+    for (int next : adj.get(node)) {
+        if (next == parent) continue;
+        if (visited[next]) {
+            low[node] = Math.min(low[node], tin[next]);          // back edge
+        } else {
+            bridgeDfs(next, node, adj, visited, tin, low, bridges);
+            low[node] = Math.min(low[node], low[next]);
+            if (low[next] > tin[node])                           // cannot get above node
+                bridges.add(Arrays.asList(node, next));
+        }
+    }
+}`},
+{t:"Articulation Points in a Graph",g:"Advanced",
+s:"An articulation point (cut vertex) is a node whose removal disconnects the graph. Find them all (return [−1] if there are none).",
+h:["Same tin and low values as for bridges.","A non-root node is an articulation point if some child has low[child] >= tin[node]: that child’s subtree can only reach the rest through this node. Note the >= here, where bridges use >.","The root is an articulation point only if it has two or more DFS children."],
+cx:"O(V + E)",
+c:`static List<Integer> articulationPoints(int n, List<List<Integer>> adj) {
+    int[] tin = new int[n], low = new int[n];
+    boolean[] visited = new boolean[n], isArt = new boolean[n];
+    timer = 0;
+    for (int i = 0; i < n; i++)
+        if (!visited[i]) artDfs(i, -1, adj, visited, tin, low, isArt);
+    List<Integer> res = new ArrayList<>();
+    for (int i = 0; i < n; i++)
+        if (isArt[i]) res.add(i);
+    if (res.isEmpty()) res.add(-1);
+    return res;
+}
+static void artDfs(int node, int parent, List<List<Integer>> adj, boolean[] visited,
+                   int[] tin, int[] low, boolean[] isArt) {
+    visited[node] = true;
+    tin[node] = low[node] = timer++;
+    int children = 0;
+    for (int next : adj.get(node)) {
+        if (next == parent) continue;
+        if (visited[next]) {
+            low[node] = Math.min(low[node], tin[next]);
+        } else {
+            artDfs(next, node, adj, visited, tin, low, isArt);
+            low[node] = Math.min(low[node], low[next]);
+            if (low[next] >= tin[node] && parent != -1) isArt[node] = true;
+            children++;
+        }
+    }
+    if (parent == -1 && children > 1) isArt[node] = true;   // root needs 2+ children
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|continue)\b|\b(int|long|boolean|void|char|true|false|String|List|ArrayList|Queue|ArrayDeque|Set|HashSet|Arrays|Map|HashMap|Deque|Character|Integer|StringBuilder|LinkedList|TreeSet|Long|PriorityQueue)\b|\b(\d+)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+const KEY="graphs-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+esc(p.s)+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p></div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>

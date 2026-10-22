@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dynamic Programming: Java Revision Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1d2230;--mute:#666d7e;--line:#dedbd2;--acc:#2c4fd6;--accbg:#e8edff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}}
+:root[data-theme="dark"]{--bg:#14161c;--card:#1c1f27;--ink:#e8e9ee;--mute:#9aa0b0;--line:#2e3240;--acc:#8ea6ff;--accbg:#242a45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Serif 4",Georgia,serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.tpl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:14px 16px;margin-bottom:20px}
+.tpl h2{font-size:18px;margin:0 0 6px}.tpl p{margin:6px 0}.tpl ol{margin:6px 0;padding-left:22px}
+.code{background:#1b1e27;color:#e6e9f2;border-radius:8px;padding:14px 16px;margin:8px 0;font:15px/1.7 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow-x:auto;tab-size:4}
+.k{color:#ff9ac1}.n{color:#ffd479}.c{color:#8fb28a;font-style:italic}.t{color:#7fd1ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar button,.copy{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.prog{margin-left:auto;color:var(--mute);font-size:14px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:600}
+summary .tag{font-weight:400;font-size:13px;background:var(--accbg);color:var(--acc);border-radius:4px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+.body h3{font-size:15px;margin:14px 0 2px;color:var(--acc)}
+.body p,.body ul{margin:2px 0}.body ul{padding-left:20px}
+.cx{color:var(--mute);font-size:15px}
+.copy{float:right;border-radius:4px;padding:2px 10px;margin-top:2px}
+</style></head>
+<body><main>
+<h1>Dynamic Programming: Java Revision Sheet</h1>
+<p class="sub">Striver’s A2Z, Dynamic Programming section (53 problems). 1D, grid, subset-sum, knapsack, string, stock, LIS, partition and square DP (59 cards, including 4 pattern notes). Built from the standard list, because the sheet’s DP section could not be read. Check the titles against your sheet.</p>
+<section class="tpl">
+<h2>How to build any DP solution</h2>
+<ol>
+<li><b>State:</b> say in words what dp[i] (or dp[i][j]) means. Most mistakes come from a vague state.</li>
+<li><b>Recurrence:</b> write dp[i] using smaller states. Usually it is “try every choice, keep the best”.</li>
+<li><b>Base cases:</b> the smallest states that you can fill in directly.</li>
+<li><b>Order:</b> fill so that every state you need is already computed (this is tabulation, the bottom-up form). Memoization is the same recurrence written recursively with a cache.</li>
+<li><b>Space:</b> if a row or value depends only on the previous one or two, keep just those and drop the full table.</li>
+</ol>
+<p>DP works when the problem has <b>overlapping subproblems</b> (the same smaller question appears again and again) and <b>optimal substructure</b> (the best answer is built from best answers to smaller questions).</p>
+</section>
+<div class="bar" id="bar"></div>
+<div id="list"></div>
+</main>
+<script>
+const P=[
+{t:"Introduction to DP (Fibonacci)",g:"1D DP",
+s:"Compute the nth Fibonacci number, and see the three ways to write the same DP.",
+h:["State: fib(n). Recurrence: fib(n) = fib(n − 1) + fib(n − 2). Base: fib(0) = 0, fib(1) = 1.","Plain recursion recomputes the same values and takes exponential time. A cache (memoization) makes each value computed once.","Tabulation fills from the bottom up. Since each value needs only the previous two, two variables are enough."],
+cx:"O(n) time. Memo O(n) space, tabulation O(1) space",
+c:`// 1. memoization (top-down). Fill memo with -1 before the first call.
+static int fib(int n, int[] memo) {
+    if (n <= 1) return n;
+    if (memo[n] != -1) return memo[n];
+    return memo[n] = fib(n - 1, memo) + fib(n - 2, memo);
+}
+// 2. tabulation with O(1) space
+static int fibSpace(int n) {
+    if (n <= 1) return n;
+    int prev2 = 0, prev = 1;
+    for (int i = 2; i <= n; i++) {
+        int cur = prev + prev2;
+        prev2 = prev;
+        prev = cur;
+    }
+    return prev;
+}`},
+{t:"Climbing Stairs",g:"1D DP",
+s:"You climb 1 or 2 steps at a time. How many distinct ways are there to reach step n?",
+h:["State: ways(i) = number of ways to reach step i.","To reach step i you came from i − 1 or i − 2, so ways(i) = ways(i − 1) + ways(i − 2). Base: ways(0) = 1, ways(1) = 1."],
+cx:"O(n) time, O(1) space",
+c:`static int climbStairs(int n) {
+    int prev2 = 1, prev = 1;      // ways to stand on step 0 and step 1
+    for (int i = 2; i <= n; i++) {
+        int cur = prev + prev2;
+        prev2 = prev;
+        prev = cur;
+    }
+    return prev;
+}`},
+{t:"Frog Jump",g:"1D DP",
+s:"A frog on stone 0 can jump to the next stone or skip one. A jump costs the absolute height difference. Find the least total energy to reach the last stone.",
+h:["State: dp[i] = least energy to reach stone i.","dp[i] = min( dp[i − 1] + |h[i] − h[i − 1]| , dp[i − 2] + |h[i] − h[i − 2]| ). Base: dp[0] = 0.","Only the last two values are needed, so use two variables."],
+cx:"O(n) time, O(1) space",
+c:`static int frogJump(int[] h) {
+    int n = h.length;
+    int prev2 = 0, prev = 0;                 // dp[i - 2] and dp[i - 1]
+    for (int i = 1; i < n; i++) {
+        int one = prev + Math.abs(h[i] - h[i - 1]);
+        int two = i > 1 ? prev2 + Math.abs(h[i] - h[i - 2])
+                        : Integer.MAX_VALUE;     // no stone two behind at i = 1
+        int cur = Math.min(one, two);
+        prev2 = prev;
+        prev = cur;
+    }
+    return prev;
+}`},
+{t:"Frog Jump with K Distances",g:"1D DP",
+s:"Same as Frog Jump, but the frog may jump up to k stones ahead.",
+h:["Same state. The recurrence tries every jump length j from 1 to k: dp[i] = min over j of ( dp[i − j] + |h[i] − h[i − j]| ).","Keep the whole dp array, since any of the last k values may be needed."],
+cx:"O(n × k) time, O(n) space",
+c:`static int frogJumpK(int[] h, int k) {
+    int n = h.length;
+    int[] dp = new int[n];                    // dp[i] = least energy to reach i
+    for (int i = 1; i < n; i++) {
+        dp[i] = Integer.MAX_VALUE;
+        for (int j = 1; j <= k && i - j >= 0; j++)
+            dp[i] = Math.min(dp[i], dp[i - j] + Math.abs(h[i] - h[i - j]));
+    }
+    return dp[n - 1];
+}`},
+{t:"Maximum Sum of Non-Adjacent Elements",g:"1D DP",
+s:"Choose elements with the largest sum, with no two chosen elements next to each other.",
+h:["State: dp[i] = best sum using the first i elements.","For each element you either skip it (best stays dp[i − 1]) or take it (element + dp[i − 2], since its neighbour is not allowed).","dp[i] = max(dp[i − 1], a[i] + dp[i − 2]). Two variables are enough."],
+cx:"O(n) time, O(1) space",
+c:`static int maxNonAdjacent(int[] a) {
+    int prev2 = 0, prev = 0;    // best sums for the first i - 1 and i elements
+    for (int x : a) {
+        int cur = Math.max(prev, x + prev2);   // skip x, or take x
+        prev2 = prev;
+        prev = cur;
+    }
+    return prev;
+}`},
+{t:"House Robber II",g:"1D DP",
+s:"The houses are in a circle, so the first and last are neighbours. Find the most money you can rob without robbing two adjacent houses.",
+h:["The first and last houses cannot both be robbed.","So solve the non-adjacent problem twice: once without the last house, once without the first. Take the larger answer.","A single house is a special case: just rob it."],
+cx:"O(n) time, O(1) space",
+c:`static int robCircular(int[] a) {
+    int n = a.length;
+    if (n == 1) return a[0];
+    return Math.max(robRange(a, 0, n - 2),    // skip the last house
+                    robRange(a, 1, n - 1));   // skip the first house
+}
+static int robRange(int[] a, int lo, int hi) {
+    int prev2 = 0, prev = 0;
+    for (int i = lo; i <= hi; i++) {
+        int cur = Math.max(prev, a[i] + prev2);
+        prev2 = prev;
+        prev = cur;
+    }
+    return prev;
+}`},
+{t:"Ninja’s Training",g:"2D / grid DP",
+s:"Each day you pick one of 3 activities and earn points[day][activity]. You cannot repeat the same activity on two consecutive days. Maximise the total.",
+h:["State: dp[j] = best total so far if today’s activity is j.","For each activity j today, take the best of yesterday’s totals over activities other than j, and add today’s points.","Answer: the largest of the three values on the last day."],
+cx:"O(n × 3 × 3) time, O(1) space",
+c:`static int ninjaTraining(int[][] points) {
+    int n = points.length;
+    int[] dp = points[0].clone();            // day 0: just that day’s points
+    for (int day = 1; day < n; day++) {
+        int[] next = new int[3];
+        for (int j = 0; j < 3; j++)
+            for (int last = 0; last < 3; last++)
+                if (last != j)               // cannot repeat the activity
+                    next[j] = Math.max(next[j], dp[last] + points[day][j]);
+        dp = next;
+    }
+    return Math.max(dp[0], Math.max(dp[1], dp[2]));
+}`},
+{t:"Grid Unique Paths",g:"2D / grid DP",
+s:"A robot moves only right or down from the top-left to the bottom-right of an m × n grid. How many paths are there?",
+h:["State: dp[i][j] = number of paths to cell (i, j).","dp[i][j] = dp[i − 1][j] + dp[i][j − 1] (arrive from above or from the left). The first row and first column each have exactly 1 path.","Each row needs only the row above, so one array is enough: dp[j] += dp[j − 1] (the old dp[j] is the “from above” value)."],
+cx:"O(m × n) time, O(n) space",
+c:`static int uniquePaths(int m, int n) {
+    int[] dp = new int[n];
+    Arrays.fill(dp, 1);                      // first row: one way to each cell
+    for (int i = 1; i < m; i++)
+        for (int j = 1; j < n; j++)
+            dp[j] += dp[j - 1];              // from above (old dp[j]) + from the left
+    return dp[n - 1];
+}`},
+{t:"Grid Unique Paths II (With Obstacles)",g:"2D / grid DP",
+s:"Same grid, but cells marked 1 are obstacles that cannot be entered.",
+h:["Same recurrence, except an obstacle cell has 0 paths.","Start with 1 path to the start cell (0 if it is blocked)."],
+cx:"O(m × n) time, O(n) space",
+c:`static int uniquePathsWithObstacles(int[][] grid) {
+    int m = grid.length, n = grid[0].length;
+    int[] dp = new int[n];
+    dp[0] = grid[0][0] == 1 ? 0 : 1;
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++) {
+            if (grid[i][j] == 1) {           // blocked cell
+                dp[j] = 0;
+                continue;
+            }
+            if (j > 0) dp[j] += dp[j - 1];   // add the paths from the left
+        }
+    return dp[n - 1];
+}`},
+{t:"Minimum Path Sum in a Grid",g:"2D / grid DP",
+s:"Move right or down from top-left to bottom-right. Find the path with the smallest sum of cell values.",
+h:["State: dp[i][j] = smallest sum to reach cell (i, j).","dp[i][j] = grid[i][j] + min(dp[i − 1][j], dp[i][j − 1]). On the first row or column only one neighbour exists, so treat the missing one as infinity."],
+cx:"O(m × n) time, O(n) space",
+c:`static int minPathSum(int[][] grid) {
+    int m = grid.length, n = grid[0].length;
+    int[] dp = new int[n];
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++) {
+            if (i == 0 && j == 0) {
+                dp[j] = grid[0][0];
+            } else {
+                int up = i > 0 ? dp[j] : Integer.MAX_VALUE;
+                int left = j > 0 ? dp[j - 1] : Integer.MAX_VALUE;
+                dp[j] = grid[i][j] + Math.min(up, left);
+            }
+        }
+    return dp[n - 1];
+}`},
+{t:"Triangle (Minimum Path Sum)",g:"2D / grid DP",
+s:"From the top of a triangle, move to an adjacent number on the row below at each step. Find the smallest path sum from top to bottom.",
+h:["Work from the bottom up, so the answer ends at the single top cell and you need no special end rule.","dp[j] starts as the last row. Going up a row, each cell becomes its value plus the smaller of the two cells below it: dp[j] = value + min(dp[j], dp[j + 1])."],
+cx:"O(n²) time, O(n) space",
+c:`static int minimumTotal(List<List<Integer>> triangle) {
+    int n = triangle.size();
+    int[] dp = new int[n];
+    for (int j = 0; j < n; j++)
+        dp[j] = triangle.get(n - 1).get(j);       // start from the last row
+    for (int i = n - 2; i >= 0; i--)
+        for (int j = 0; j <= i; j++)
+            dp[j] = triangle.get(i).get(j) + Math.min(dp[j], dp[j + 1]);
+    return dp[0];
+}`},
+{t:"Minimum / Maximum Falling Path Sum",g:"2D / grid DP",
+s:"Start in any cell of the top row. Each step moves down to the cell directly below, or diagonally down-left or down-right. Find the smallest (or largest) sum.",
+h:["State: dp[j] = best sum of a path ending at column j of the current row.","Each cell takes the best of the three cells above it (the same column and both diagonals), within bounds, plus its own value.","The answer is the best value in the last row. For the maximum version, swap Math.min for Math.max."],
+cx:"O(n × m) time, O(m) space",
+c:`static int minFallingPathSum(int[][] matrix) {
+    int n = matrix.length, m = matrix[0].length;
+    int[] dp = matrix[0].clone();
+    for (int i = 1; i < n; i++) {
+        int[] next = new int[m];
+        for (int j = 0; j < m; j++) {
+            int best = dp[j];                              // from straight above
+            if (j > 0) best = Math.min(best, dp[j - 1]);   // from up-left
+            if (j < m - 1) best = Math.min(best, dp[j + 1]); // from up-right
+            next[j] = matrix[i][j] + best;
+        }
+        dp = next;
+    }
+    int ans = Integer.MAX_VALUE;
+    for (int x : dp) ans = Math.min(ans, x);
+    return ans;
+}`},
+{t:"Cherry Pickup II (3D DP)",g:"2D / grid DP",
+s:"Two robots start at the top-left and top-right of a grid. Each step, both move down one row, shifting by −1, 0 or +1 column. They collect the cherries in the cells they visit (a shared cell counts once). Maximise the total.",
+h:["Both robots are always in the same row, so the state is (row, column of robot A, column of robot B).","dp[a][b] = best cherries from this row down with the robots at columns a and b.","Build from the last row upwards. For each (a, b), try all 9 pairs of moves, take the best of the next row’s values, and add this row’s cherries (once if a == b).","Answer: the value at row 0 with robots at columns 0 and m − 1."],
+cx:"O(n × m² × 9) time, O(m²) space",
+c:`static int cherryPickup(int[][] grid) {
+    int n = grid.length, m = grid[0].length;
+    int[][] dp = new int[m][m];
+    for (int a = 0; a < m; a++)                  // last row
+        for (int b = 0; b < m; b++)
+            dp[a][b] = (a == b) ? grid[n - 1][a]
+                                : grid[n - 1][a] + grid[n - 1][b];
+    for (int row = n - 2; row >= 0; row--) {
+        int[][] next = new int[m][m];
+        for (int a = 0; a < m; a++)
+            for (int b = 0; b < m; b++) {
+                int best = 0;
+                for (int da = -1; da <= 1; da++)
+                    for (int db = -1; db <= 1; db++) {
+                        int na = a + da, nb = b + db;
+                        if (na >= 0 && na < m && nb >= 0 && nb < m)
+                            best = Math.max(best, dp[na][nb]);
+                    }
+                int cherries = (a == b) ? grid[row][a]
+                                        : grid[row][a] + grid[row][b];
+                next[a][b] = cherries + best;
+            }
+        dp = next;
+    }
+    return dp[0][m - 1];
+}`},
+{t:"Pattern: Pick or Skip (Subsets and Knapsack)",g:"Pattern",
+s:"The idea behind every card in this part, and the one loop-direction rule to remember.",
+h:["For each item you either skip it or take it. dp[s] answers a question about sum (or capacity) s using the items seen so far.","0/1 problems (each item at most once): loop the sum downwards, so dp[s - x] still holds the value from before this item.","Unbounded problems (items reusable): loop the sum upwards, so dp[s - x] may already include this item.","Counting combinations (order does not matter): put the items in the outer loop. Counting ordered sequences would put the sum in the outer loop."],
+cx:"Typically O(n \u00d7 target) time, O(target) space",
+c:`// 0/1: each item once, loop downwards
+for (int x : items)
+    for (int s = target; s >= x; s--)
+        dp[s] = combine(dp[s], dp[s - x]);
+
+// unbounded: items reusable, loop upwards
+for (int x : items)
+    for (int s = x; s <= target; s++)
+        dp[s] = combine(dp[s], dp[s - x]);`},
+{t:"Subset Sum Equals Target",g:"Subset sum",
+s:"Is there a subset of the non-negative numbers that adds up to k?",
+h:["State: dp[s] = true if some subset of the items seen so far has sum s.","Base: dp[0] = true (the empty subset).","For each number x, any sum s that was reachable with s \u2212 x is now reachable too. Loop downwards so each number is used once."],
+cx:"O(n \u00d7 k) time, O(k) space",
+c:`static boolean subsetSum(int[] a, int k) {
+    boolean[] dp = new boolean[k + 1];    // dp[s]: can some subset make sum s
+    dp[0] = true;                         // the empty subset
+    for (int x : a)
+        for (int s = k; s >= x; s--)      // downwards: each number used at most once
+            if (dp[s - x]) dp[s] = true;
+    return dp[k];
+}`},
+{t:"Partition Equal Subset Sum",g:"Subset sum",
+s:"Can the array be split into two subsets with equal sums?",
+h:["If the total is odd, the answer is no.","Otherwise you need a subset with sum total / 2. That is Subset Sum with target = total / 2."],
+cx:"O(n \u00d7 total) time, O(total) space",
+c:`static boolean canPartition(int[] a) {
+    int total = 0;
+    for (int x : a) total += x;
+    if (total % 2 != 0) return false;
+    return subsetSum(a, total / 2);      // from the previous card
+}`},
+{t:"Partition into Two Subsets with Minimum Absolute Difference",g:"Subset sum",
+s:"Split the array into two subsets so that the absolute difference of their sums is as small as possible.",
+h:["If one subset has sum s, the other has total \u2212 s, and the difference is total \u2212 2s.","Find every reachable subset sum from 0 to total (Subset Sum table). Among the reachable sums s up to total / 2, the largest s gives the smallest difference."],
+cx:"O(n \u00d7 total) time, O(total) space",
+c:`static int minSubsetDiff(int[] a) {
+    int total = 0;
+    for (int x : a) total += x;
+    boolean[] dp = new boolean[total + 1];
+    dp[0] = true;
+    for (int x : a)
+        for (int s = total; s >= x; s--)
+            if (dp[s - x]) dp[s] = true;
+    int best = Integer.MAX_VALUE;
+    for (int s = 0; s <= total / 2; s++)
+        if (dp[s]) best = Math.min(best, total - 2 * s);
+    return best;
+}`},
+{t:"Count Subsets with Sum K",g:"Subset sum",
+s:"Count the subsets whose sum is exactly k (modulo 1e9 + 7). Zeros are allowed, and each zero doubles the count.",
+h:["State: dp[s] = number of subsets of the items seen so far with sum s. Base: dp[0] = 1.","Adding item x: dp[s] += dp[s \u2212 x], looping downwards (0/1).","For x = 0 this reads dp[s] += dp[s], which doubles it. That is correct, because a zero can be included or left out."],
+cx:"O(n \u00d7 k) time, O(k) space",
+c:`static int countSubsets(int[] a, int k) {
+    final int MOD = 1_000_000_007;
+    int[] dp = new int[k + 1];
+    dp[0] = 1;                                // the empty subset
+    for (int x : a)
+        for (int s = k; s >= x; s--)
+            dp[s] = (dp[s] + dp[s - x]) % MOD;
+    return dp[k];
+}`},
+{t:"Count Partitions with a Given Difference",g:"Subset sum",
+s:"Count the ways to split the array into two subsets S1 and S2 with S1 \u2212 S2 = d.",
+h:["S1 + S2 = total and S1 \u2212 S2 = d, so S2 = (total \u2212 d) / 2.","If total \u2212 d is negative or odd, no split exists.","Otherwise count the subsets with sum (total \u2212 d) / 2, using the previous card."],
+cx:"O(n \u00d7 total) time, O(total) space",
+c:`static int countPartitions(int[] a, int d) {
+    int total = 0;
+    for (int x : a) total += x;
+    if (total - d < 0 || (total - d) % 2 != 0) return 0;
+    return countSubsets(a, (total - d) / 2);   // S2 = (total - d) / 2
+}`},
+{t:"Target Sum",g:"Subset sum",
+s:"Put + or \u2212 in front of every number. Count the ways to make the expression equal target.",
+h:["The numbers with + form one subset and the numbers with \u2212 form the other, so S1 \u2212 S2 = target.","That is exactly Count Partitions with a Given Difference. A negative target gives the same count as its absolute value."],
+cx:"O(n \u00d7 total)",
+c:`static int findTargetSumWays(int[] nums, int target) {
+    return countPartitions(nums, Math.abs(target));
+}`},
+{t:"0/1 Knapsack",g:"Knapsack",
+s:"Items have a weight and a value. Choose items, each at most once, to maximise value within the capacity.",
+h:["State: dp[w] = best value using the items seen so far with capacity w.","For each item, either skip it or take it: dp[w] = max(dp[w], value + dp[w \u2212 weight]).","Loop the capacity downwards so each item is used once."],
+cx:"O(n \u00d7 capacity) time, O(capacity) space",
+c:`static int knapsack(int[] wt, int[] val, int capacity) {
+    int[] dp = new int[capacity + 1];     // dp[w]: best value with capacity w
+    for (int i = 0; i < wt.length; i++)
+        for (int w = capacity; w >= wt[i]; w--)   // downwards: each item once
+            dp[w] = Math.max(dp[w], val[i] + dp[w - wt[i]]);
+    return dp[capacity];
+}`},
+{t:"Minimum Coins",g:"Coins",
+s:"Coins can be used any number of times. Find the fewest coins that make the amount, or \u22121.",
+h:["State: dp[a] = fewest coins to make amount a. Base: dp[0] = 0.","dp[a] = 1 + min over coins c \u2264 a of dp[a \u2212 c].","Start every other entry at a large value (amount + 1). If dp[amount] is still large at the end, it is impossible."],
+cx:"O(amount \u00d7 coins) time, O(amount) space",
+c:`static int coinChange(int[] coins, int amount) {
+    int INF = amount + 1;
+    int[] dp = new int[amount + 1];       // dp[a]: fewest coins for amount a
+    Arrays.fill(dp, INF);
+    dp[0] = 0;
+    for (int a = 1; a <= amount; a++)
+        for (int c : coins)
+            if (c <= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);
+    return dp[amount] >= INF ? -1 : dp[amount];
+}`},
+{t:"Coin Change II (Number of Ways)",g:"Coins",
+s:"Count the combinations of coins (unlimited supply) that make the amount. Order does not matter.",
+h:["State: dp[a] = number of combinations making amount a. Base: dp[0] = 1.","Put the coins in the outer loop and the amount in the inner loop, going upwards. Then each combination is counted once, in a fixed coin order.","Swapping the loops would count different orderings as different (that is a different problem)"],
+cx:"O(amount \u00d7 coins) time, O(amount) space",
+c:`static int change(int amount, int[] coins) {
+    int[] dp = new int[amount + 1];       // dp[a]: combinations making a
+    dp[0] = 1;
+    for (int c : coins)                   // coins outside: counts combinations
+        for (int a = c; a <= amount; a++)
+            dp[a] += dp[a - c];
+    return dp[amount];
+}`},
+{t:"Unbounded Knapsack",g:"Knapsack",
+s:"Like 0/1 Knapsack, but every item can be taken any number of times.",
+h:["The recurrence is the same. The only change is the loop direction: go upwards, so dp[w \u2212 weight] may already include this item."],
+cx:"O(n \u00d7 capacity) time, O(capacity) space",
+c:`static int unboundedKnapsack(int[] wt, int[] val, int capacity) {
+    int[] dp = new int[capacity + 1];
+    for (int i = 0; i < wt.length; i++)
+        for (int w = wt[i]; w <= capacity; w++)   // upwards: item can repeat
+            dp[w] = Math.max(dp[w], val[i] + dp[w - wt[i]]);
+    return dp[capacity];
+}`},
+{t:"Rod Cutting",g:"Knapsack",
+s:"A rod of length n can be cut into pieces. price[i] is the price of a piece of length i + 1. Maximise the total price.",
+h:["State: dp[len] = best price for a rod of length len.","Try every length cut for the first piece: dp[len] = max over cut of price[cut \u2212 1] + dp[len \u2212 cut]. This is unbounded knapsack where the weights are the lengths."],
+cx:"O(n\u00b2) time, O(n) space",
+c:`static int cutRod(int[] price, int n) {
+    int[] dp = new int[n + 1];            // dp[len]: best price for length len
+    for (int len = 1; len <= n; len++)
+        for (int cut = 1; cut <= len; cut++)
+            dp[len] = Math.max(dp[len], price[cut - 1] + dp[len - cut]);
+    return dp[n];
+}`},
+{t:"Pattern: Two Strings, Prefix by Prefix",g:"Pattern",
+s:"The shape shared by every string DP on this page.",
+h:["State: dp[i][j] describes the first i characters of string a and the first j characters of string b. Row 0 and column 0 are the empty prefixes, which makes the base cases easy.","Look at the last characters, a[i \u2212 1] and b[j \u2212 1]. If they match, you usually extend the diagonal cell dp[i \u2212 1][j \u2212 1].","If they do not match, you combine the neighbours: dp[i \u2212 1][j] (drop a\u2019s last character) and dp[i][j \u2212 1] (drop b\u2019s last character), using max or min or a sum, depending on the question.","One string problems (palindromes) reuse these by pairing the string with its reverse."],
+cx:"O(n \u00d7 m) time and space",
+c:`int[][] dp = new int[n + 1][m + 1];      // row 0 / column 0 = empty prefix
+for (int i = 1; i <= n; i++)
+    for (int j = 1; j <= m; j++) {
+        if (a.charAt(i - 1) == b.charAt(j - 1))
+            dp[i][j] = /* use dp[i - 1][j - 1] */;
+        else
+            dp[i][j] = /* combine dp[i - 1][j] and dp[i][j - 1] */;
+    }`},
+{t:"Longest Common Subsequence",g:"Common subsequence",
+s:"Find the length of the longest subsequence (order kept, characters need not be adjacent) that appears in both strings.",
+h:["State: dp[i][j] = LCS length of a[0..i) and b[0..j).","If the last characters match, they extend the best of the shorter strings: dp[i][j] = 1 + dp[i \u2212 1][j \u2212 1].","Otherwise drop a character from one string or the other: dp[i][j] = max(dp[i \u2212 1][j], dp[i][j \u2212 1]).","The table is returned from a helper, because the next cards backtrack through it."],
+cx:"O(n \u00d7 m) time and space",
+c:`static int[][] lcsTable(String a, String b) {
+    int n = a.length(), m = b.length();
+    int[][] dp = new int[n + 1][m + 1];   // dp[i][j]: LCS of a[0..i) and b[0..j)
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++) {
+            if (a.charAt(i - 1) == b.charAt(j - 1))
+                dp[i][j] = 1 + dp[i - 1][j - 1];
+            else
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+    return dp;
+}
+static int lcs(String a, String b) {
+    return lcsTable(a, b)[a.length()][b.length()];
+}`},
+{t:"Print the Longest Common Subsequence",g:"Common subsequence",
+s:"Return an actual longest common subsequence, not just its length.",
+h:["Build the LCS table, then walk back from dp[n][m].","If the two last characters match, that character is in the answer: record it and move diagonally.","Otherwise move to the neighbour with the larger value, since that is where the value came from.","The characters are collected backwards, so reverse at the end."],
+cx:"O(n \u00d7 m)",
+c:`static String printLCS(String a, String b) {
+    int[][] dp = lcsTable(a, b);          // from the previous card
+    StringBuilder sb = new StringBuilder();
+    int i = a.length(), j = b.length();
+    while (i > 0 && j > 0) {
+        if (a.charAt(i - 1) == b.charAt(j - 1)) {
+            sb.append(a.charAt(i - 1));   // part of the LCS
+            i--;
+            j--;
+        } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+    return sb.reverse().toString();
+}`},
+{t:"Longest Common Substring",g:"Common subsequence",
+s:"Find the length of the longest substring (characters must be adjacent) that appears in both strings.",
+h:["State: dp[i][j] = length of the common substring that ends exactly at a[i \u2212 1] and b[j \u2212 1].","If they match, dp[i][j] = 1 + dp[i \u2212 1][j \u2212 1]. If they do not match, it is 0, because the substring is broken.","The answer is the largest cell anywhere in the table, not the bottom-right one."],
+cx:"O(n \u00d7 m) time and space",
+c:`static int longestCommonSubstring(String a, String b) {
+    int n = a.length(), m = b.length(), best = 0;
+    int[][] dp = new int[n + 1][m + 1];   // common substring ENDING here
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++) {
+            if (a.charAt(i - 1) == b.charAt(j - 1)) {
+                dp[i][j] = 1 + dp[i - 1][j - 1];
+                best = Math.max(best, dp[i][j]);
+            }
+            // otherwise dp[i][j] stays 0
+        }
+    return best;
+}`},
+{t:"Longest Palindromic Subsequence",g:"Palindromes",
+s:"Find the length of the longest subsequence of a string that is a palindrome.",
+h:["A palindrome reads the same forwards and backwards. So the longest palindromic subsequence of s is the longest common subsequence of s and its reverse."],
+cx:"O(n\u00b2)",
+c:`static int longestPalindromeSubseq(String s) {
+    String rev = new StringBuilder(s).reverse().toString();
+    return lcs(s, rev);                   // from the LCS card
+}`},
+{t:"Minimum Insertions to Make a String Palindrome",g:"Palindromes",
+s:"Find the fewest characters to insert (anywhere) to turn the string into a palindrome.",
+h:["Keep the longest palindromic subsequence as it is. Every other character needs a mirror partner inserted.","Answer = length \u2212 length of the longest palindromic subsequence."],
+cx:"O(n\u00b2)",
+c:`static int minInsertionsPalindrome(String s) {
+    return s.length() - longestPalindromeSubseq(s);
+}`},
+{t:"Minimum Insertions / Deletions to Convert String 1 to String 2",g:"Common subsequence",
+s:"Using only insertions and deletions, find the fewest operations to turn s1 into s2.",
+h:["The characters of the LCS can stay untouched.","Delete the other characters of s1, and insert the other characters of s2.","Answer = (n \u2212 LCS) + (m \u2212 LCS)."],
+cx:"O(n \u00d7 m)",
+c:`static int minOperations(String s1, String s2) {
+    int l = lcs(s1, s2);
+    return (s1.length() - l) + (s2.length() - l);   // deletions + insertions
+}`},
+{t:"Shortest Common Supersequence",g:"Common subsequence",
+s:"Find the shortest string that has both a and b as subsequences.",
+h:["Its length is n + m \u2212 LCS: the common characters are written once, all the others once each.","Backtrack through the LCS table. A matching character is written once and you move diagonally.","Otherwise write the character from the string you step away from (the one that gave the larger neighbour), and move.","Append whatever is left of either string, then reverse."],
+cx:"O(n \u00d7 m)",
+c:`static String shortestCommonSupersequence(String a, String b) {
+    int[][] dp = lcsTable(a, b);
+    StringBuilder sb = new StringBuilder();
+    int i = a.length(), j = b.length();
+    while (i > 0 && j > 0) {
+        if (a.charAt(i - 1) == b.charAt(j - 1)) {
+            sb.append(a.charAt(i - 1));   // common character, written once
+            i--;
+            j--;
+        } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+            sb.append(a.charAt(i - 1));   // only in a
+            i--;
+        } else {
+            sb.append(b.charAt(j - 1));   // only in b
+            j--;
+        }
+    }
+    while (i > 0) sb.append(a.charAt(--i));
+    while (j > 0) sb.append(b.charAt(--j));
+    return sb.reverse().toString();
+}`},
+{t:"Distinct Subsequences",g:"Edit and match",
+s:"Count the number of distinct subsequences of s that equal t.",
+h:["State: dp[j] = ways to form the first j characters of t from the part of s seen so far. Base: dp[0] = 1 (the empty string can be formed one way).","For each character of s that equals t[j \u2212 1], the ways to form t[0..j) grow by the ways to form t[0..j \u2212 1) (use this character).","Loop j downwards so each character of s is used only once. If your version asks for the answer modulo 1e9 + 7, take the modulo at each addition."],
+cx:"O(n \u00d7 m) time, O(m) space",
+c:`static int numDistinct(String s, String t) {
+    int m = t.length();
+    long[] dp = new long[m + 1];          // dp[j]: ways to form t[0..j)
+    dp[0] = 1;
+    for (int i = 0; i < s.length(); i++)
+        for (int j = m; j >= 1; j--)      // downwards: each char of s used once
+            if (s.charAt(i) == t.charAt(j - 1))
+                dp[j] += dp[j - 1];
+    return (int) dp[m];
+}`},
+{t:"Edit Distance",g:"Edit and match",
+s:"Find the fewest insertions, deletions and replacements to turn one string into another.",
+h:["State: dp[i][j] = fewest edits to turn a[0..i) into b[0..j).","Base: turning a prefix into the empty string takes i deletions, and turning the empty string into a prefix takes j insertions.","If the last characters match, no edit is needed: dp[i][j] = dp[i \u2212 1][j \u2212 1].","Otherwise 1 + the cheapest of replace (diagonal), delete (up) and insert (left)."],
+cx:"O(n \u00d7 m) time and space",
+c:`static int editDistance(String a, String b) {
+    int n = a.length(), m = b.length();
+    int[][] dp = new int[n + 1][m + 1];   // dp[i][j]: edits for a[0..i) -> b[0..j)
+    for (int i = 0; i <= n; i++) dp[i][0] = i;   // delete i characters
+    for (int j = 0; j <= m; j++) dp[0][j] = j;   // insert j characters
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++) {
+            if (a.charAt(i - 1) == b.charAt(j - 1)) {
+                dp[i][j] = dp[i - 1][j - 1];
+            } else {
+                dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],        // replace
+                               Math.min(dp[i - 1][j],            // delete
+                                        dp[i][j - 1]));          // insert
+            }
+        }
+    return dp[n][m];
+}`},
+{t:"Wildcard Matching",g:"Edit and match",
+s:"Does the pattern match the whole string? In the pattern, ? matches any single character and * matches any sequence (including the empty one).",
+h:["State: dp[i][j] = true if s[0..i) matches p[0..j).","Base: dp[0][0] is true. An empty string matches only a pattern made entirely of *.","If p[j \u2212 1] is *, either it matches nothing (dp[i][j \u2212 1]) or it absorbs one more character of s (dp[i \u2212 1][j]).","If it is ? or equals s[i \u2212 1], the answer is dp[i \u2212 1][j \u2212 1]. Otherwise false."],
+cx:"O(n \u00d7 m) time and space",
+c:`static boolean isMatch(String s, String p) {
+    int n = s.length(), m = p.length();
+    boolean[][] dp = new boolean[n + 1][m + 1];   // s[0..i) vs p[0..j)
+    dp[0][0] = true;
+    for (int j = 1; j <= m; j++)                  // empty s: only a run of '*' matches
+        dp[0][j] = dp[0][j - 1] && p.charAt(j - 1) == '*';
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++) {
+            char pc = p.charAt(j - 1);
+            if (pc == '*')
+                dp[i][j] = dp[i][j - 1] || dp[i - 1][j];   // match nothing, or eat one char
+            else if (pc == '?' || pc == s.charAt(i - 1))
+                dp[i][j] = dp[i - 1][j - 1];
+        }
+    return dp[n][m];
+}`},
+{t:"Pattern: Stock Problems as a Two-State Machine",g:"Stocks",
+s:"One idea solves all six stock problems.",
+h:["Each day you are in one of two states: holding a share, or not holding one. Track the best profit for each.","Buying moves you from not holding to holding, and costs the price. Selling moves you back and earns the price.","Each variant only changes the rules around the moves: a limit on transactions (add a counter), a cooldown (add a resting state), or a fee (subtract it when selling)."],
+cx:"O(n) time, O(1) space",
+c:`int hold = Integer.MIN_VALUE / 2;   // best profit while holding a share
+int free = 0;                       // best profit while holding nothing
+for (int p : prices) {
+    int newHold = Math.max(hold, free - p);   // keep holding, or buy today
+    int newFree = Math.max(free, hold + p);   // stay out, or sell today
+    hold = newHold;
+    free = newFree;
+}`},
+{t:"Best Time to Buy and Sell Stock I",g:"Stocks",
+s:"One buy and one sell at most. Find the maximum profit.",
+h:["Scan the days, keeping the lowest price seen so far.","If you sold today, the profit would be today’s price minus that lowest price. Keep the best of these."],
+cx:"O(n) time, O(1) space",
+c:`static int maxProfitI(int[] prices) {
+    int minPrice = Integer.MAX_VALUE, best = 0;
+    for (int p : prices) {
+        minPrice = Math.min(minPrice, p);       // cheapest day so far
+        best = Math.max(best, p - minPrice);    // sell today
+    }
+    return best;
+}`},
+{t:"Best Time to Buy and Sell Stock II",g:"Stocks",
+s:"You may make as many transactions as you like (holding at most one share at a time). Find the maximum profit.",
+h:["Use the two-state machine with no limits.","The answer is the value of free after the last day. The same result comes from adding up every positive day-to-day price rise."],
+cx:"O(n) time, O(1) space",
+c:`static int maxProfitII(int[] prices) {
+    int hold = Integer.MIN_VALUE / 2, free = 0;
+    for (int p : prices) {
+        int newHold = Math.max(hold, free - p);
+        int newFree = Math.max(free, hold + p);
+        hold = newHold;
+        free = newFree;
+    }
+    return free;
+}`},
+{t:"Best Time to Buy and Sell Stock III",g:"Stocks",
+s:"At most two transactions. Find the maximum profit.",
+h:["Four states: after the first buy, after the first sell, after the second buy and after the second sell.","The second buy starts from the profit already made by the first sell: hold2 = max(hold2, sold1 − price)."],
+cx:"O(n) time, O(1) space",
+c:`static int maxProfitIII(int[] prices) {
+    int hold1 = Integer.MIN_VALUE / 2, sold1 = 0;
+    int hold2 = Integer.MIN_VALUE / 2, sold2 = 0;
+    for (int p : prices) {
+        hold1 = Math.max(hold1, -p);            // first buy
+        sold1 = Math.max(sold1, hold1 + p);     // first sell
+        hold2 = Math.max(hold2, sold1 - p);     // second buy, using the first profit
+        sold2 = Math.max(sold2, hold2 + p);     // second sell
+    }
+    return sold2;
+}`},
+{t:"Best Time to Buy and Sell Stock IV",g:"Stocks",
+s:"At most k transactions. Find the maximum profit.",
+h:["The same idea as III, with one pair of states for each transaction number t from 1 to k.","hold[t] = max(hold[t], sold[t − 1] − price) and sold[t] = max(sold[t], hold[t] + price). sold[0] stays 0."],
+cx:"O(n × k) time, O(k) space",
+c:`static int maxProfitIV(int k, int[] prices) {
+    int[] hold = new int[k + 1], sold = new int[k + 1];
+    Arrays.fill(hold, Integer.MIN_VALUE / 2);
+    for (int p : prices)
+        for (int t = 1; t <= k; t++) {
+            hold[t] = Math.max(hold[t], sold[t - 1] - p);   // buy for transaction t
+            sold[t] = Math.max(sold[t], hold[t] + p);       // sell it
+        }
+    return sold[k];                                         // 0 when k = 0
+}`},
+{t:"Best Time to Buy and Sell Stock with Cooldown",g:"Stocks",
+s:"Unlimited transactions, but after selling you cannot buy on the next day. Find the maximum profit.",
+h:["Three states: holding, just sold today, and resting (free and did not sell today).","You can only buy from the resting state, not straight after a sale.","Update in the right order: sold uses the old hold, hold uses the old rest, and rest takes the old sold."],
+cx:"O(n) time, O(1) space",
+c:`static int maxProfitCooldown(int[] prices) {
+    int hold = Integer.MIN_VALUE / 2, sold = 0, rest = 0;
+    for (int p : prices) {
+        int prevSold = sold;
+        sold = hold + p;                        // sell today
+        hold = Math.max(hold, rest - p);        // buy only from rest
+        rest = Math.max(rest, prevSold);        // cooled down after yesterday’s sale
+    }
+    return Math.max(sold, rest);
+}`},
+{t:"Best Time to Buy and Sell Stock with Transaction Fee",g:"Stocks",
+s:"Unlimited transactions, but each sale costs a fee. Find the maximum profit.",
+h:["The two-state machine again. Subtract the fee once per transaction, when selling."],
+cx:"O(n) time, O(1) space",
+c:`static int maxProfitFee(int[] prices, int fee) {
+    int hold = Integer.MIN_VALUE / 2, free = 0;
+    for (int p : prices) {
+        int newHold = Math.max(hold, free - p);
+        free = Math.max(free, hold + p - fee);   // the fee is paid on the sale
+        hold = newHold;
+    }
+    return free;
+}`},
+{t:"Longest Increasing Subsequence",g:"LIS",
+s:"Find the length of the longest strictly increasing subsequence.",
+h:["State: dp[i] = length of the longest increasing subsequence that ends at a[i].","dp[i] = 1 + the largest dp[j] over earlier j with a[j] < a[i]. The answer is the largest dp[i]."],
+cx:"O(n²) time, O(n) space",
+c:`static int lis(int[] a) {
+    int n = a.length, best = 1;
+    int[] dp = new int[n];                      // dp[i]: LIS ending at a[i]
+    for (int i = 0; i < n; i++) {
+        dp[i] = 1;
+        for (int j = 0; j < i; j++)
+            if (a[j] < a[i]) dp[i] = Math.max(dp[i], dp[j] + 1);
+        best = Math.max(best, dp[i]);
+    }
+    return best;
+}`},
+{t:"Printing the Longest Increasing Subsequence",g:"LIS",
+s:"Return one longest increasing subsequence.",
+h:["Keep a prev[i] array: the index j that gave dp[i] its value.","Find the index where the LIS ends, then follow prev back to the start, adding each value at the front."],
+cx:"O(n²) time, O(n) space",
+c:`static List<Integer> printLIS(int[] a) {
+    int n = a.length;
+    int[] dp = new int[n], prev = new int[n];
+    int bestEnd = 0;
+    for (int i = 0; i < n; i++) {
+        dp[i] = 1;
+        prev[i] = -1;
+        for (int j = 0; j < i; j++)
+            if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
+                dp[i] = dp[j] + 1;
+                prev[i] = j;
+            }
+        if (dp[i] > dp[bestEnd]) bestEnd = i;
+    }
+    LinkedList<Integer> seq = new LinkedList<>();
+    for (int i = bestEnd; i != -1; i = prev[i]) seq.addFirst(a[i]);
+    return seq;
+}`},
+{t:"Longest Increasing Subsequence (Binary Search)",g:"LIS",
+s:"The same length in O(n log n).",
+h:["Keep tails[len − 1] = the smallest possible last value of an increasing subsequence of length len. This array is always sorted.","For each number x, find the first tail that is >= x and replace it with x. If x is bigger than every tail, append it, which grows the LIS by one.","The array tails is not itself a valid subsequence. Only its size is the answer."],
+cx:"O(n log n) time, O(n) space",
+c:`static int lisBinarySearch(int[] a) {
+    int[] tails = new int[a.length];
+    int size = 0;
+    for (int x : a) {
+        int pos = Arrays.binarySearch(tails, 0, size, x);
+        if (pos < 0) pos = -(pos + 1);          // first index with tails[pos] >= x
+        tails[pos] = x;
+        if (pos == size) size++;                // x extends the longest one
+    }
+    return size;
+}`},
+{t:"Largest Divisible Subset",g:"LIS",
+s:"Find the largest subset where every pair has one number dividing the other.",
+h:["Sort the numbers. After sorting, a chain where each number is divisible by the previous one makes every pair divisible.","Run the LIS recurrence with the test nums[i] % nums[j] == 0, and rebuild the chain through a prev array."],
+cx:"O(n²) time, O(n) space",
+c:`static List<Integer> largestDivisibleSubset(int[] nums) {
+    int n = nums.length;
+    Arrays.sort(nums);
+    int[] dp = new int[n], prev = new int[n];
+    int bestEnd = 0;
+    for (int i = 0; i < n; i++) {
+        dp[i] = 1;
+        prev[i] = -1;
+        for (int j = 0; j < i; j++)
+            if (nums[i] % nums[j] == 0 && dp[j] + 1 > dp[i]) {
+                dp[i] = dp[j] + 1;
+                prev[i] = j;
+            }
+        if (dp[i] > dp[bestEnd]) bestEnd = i;
+    }
+    LinkedList<Integer> res = new LinkedList<>();
+    for (int i = bestEnd; i != -1; i = prev[i]) res.addFirst(nums[i]);
+    return res;
+}`},
+{t:"Longest String Chain",g:"LIS",
+s:"A word is a predecessor of another if inserting exactly one letter into it gives the other word. Find the longest chain.",
+h:["Sort words by length, so predecessors are processed first.","For each word, try deleting each letter. If the shorter word has a stored chain length, extend it by one.","Store the best chain ending at each word in a map."],
+cx:"O(n × L²) for words of length L",
+c:`static int longestStrChain(String[] words) {
+    Arrays.sort(words, (a, b) -> a.length() - b.length());
+    Map<String, Integer> dp = new HashMap<>();   // word -> longest chain ending at it
+    int best = 1;
+    for (String w : words) {
+        int cur = 1;
+        for (int i = 0; i < w.length(); i++) {
+            String pred = w.substring(0, i) + w.substring(i + 1);   // delete one letter
+            if (dp.containsKey(pred)) cur = Math.max(cur, dp.get(pred) + 1);
+        }
+        dp.put(w, cur);
+        best = Math.max(best, cur);
+    }
+    return best;
+}`},
+{t:"Longest Bitonic Subsequence",g:"LIS",
+s:"A bitonic subsequence rises and then falls. Find the longest one.",
+h:["inc[i] = longest increasing subsequence ending at i. dec[i] = longest decreasing subsequence starting at i (computed from the right).","A bitonic sequence peaking at i has length inc[i] + dec[i] − 1 (i is counted twice). Take the best over all i.","Some versions require both sides to have at least two elements. Check the statement."],
+cx:"O(n²) time, O(n) space",
+c:`static int longestBitonic(int[] a) {
+    int n = a.length;
+    int[] inc = new int[n], dec = new int[n];
+    for (int i = 0; i < n; i++) {                 // LIS ending at i
+        inc[i] = 1;
+        for (int j = 0; j < i; j++)
+            if (a[j] < a[i]) inc[i] = Math.max(inc[i], inc[j] + 1);
+    }
+    for (int i = n - 1; i >= 0; i--) {            // longest decreasing starting at i
+        dec[i] = 1;
+        for (int j = n - 1; j > i; j--)
+            if (a[j] < a[i]) dec[i] = Math.max(dec[i], dec[j] + 1);
+    }
+    int best = 0;
+    for (int i = 0; i < n; i++)
+        best = Math.max(best, inc[i] + dec[i] - 1);
+    return best;
+}`},
+{t:"Number of Longest Increasing Subsequences",g:"LIS",
+s:"Count how many longest increasing subsequences there are.",
+h:["Keep two arrays: len[i] (LIS length ending at i) and cnt[i] (how many such subsequences).","When a predecessor j gives a longer length, replace len[i] and copy cnt[j]. When it gives an equal length, add cnt[j].","At the end, add up cnt[i] over every i whose len[i] equals the maximum."],
+cx:"O(n²) time, O(n) space",
+c:`static int findNumberOfLIS(int[] nums) {
+    int n = nums.length, maxLen = 0, total = 0;
+    int[] len = new int[n], cnt = new int[n];
+    for (int i = 0; i < n; i++) {
+        len[i] = 1;
+        cnt[i] = 1;
+        for (int j = 0; j < i; j++) {
+            if (nums[j] < nums[i]) {
+                if (len[j] + 1 > len[i]) {          // longer: replace the count
+                    len[i] = len[j] + 1;
+                    cnt[i] = cnt[j];
+                } else if (len[j] + 1 == len[i]) {  // equal: add the count
+                    cnt[i] += cnt[j];
+                }
+            }
+        }
+        if (len[i] > maxLen) {
+            maxLen = len[i];
+            total = cnt[i];
+        } else if (len[i] == maxLen) {
+            total += cnt[i];
+        }
+    }
+    return total;
+}`},
+{t:"Pattern: Partition DP (Interval DP)",g:"Partition DP",
+s:"The shape shared by the first six cards of this group.",
+h:["State: dp[i][j] = the answer for the range i..j (a chain of matrices, a piece of stick, a stretch of balloons).","Recurrence: try every split point k inside the range. Combine dp[i][k], dp[k + 1][j] (or dp[k][j]) and the cost of the split itself, and keep the best.","Order: fill by increasing range length, so every shorter range you need is already done.","The key question each time is: which choice do I make last (or first) in this range? Burst Balloons is the classic one, where thinking about the last balloon to burst is what makes the ranges independent."],
+cx:"Usually O(n\u00b3) time, O(n\u00b2) space",
+c:`for (int len = 2; len <= n; len++)            // shorter ranges first
+    for (int i = 0; i + len - 1 < n; i++) {
+        int j = i + len - 1;
+        for (int k = i; k < j; k++)            // try every split point
+            dp[i][j] = best(dp[i][j], dp[i][k] + dp[k + 1][j] + cost(i, k, j));
+    }`},
+{t:"Matrix Chain Multiplication",g:"Partition DP",
+s:"arr gives the dimensions of a chain of matrices: matrix k is arr[k \u2212 1] \u00d7 arr[k]. Find the fewest scalar multiplications needed to multiply them all.",
+h:["State: dp[i][j] = fewest multiplications to multiply matrices i to j.","Split at k: first multiply i..k and k + 1..j, then multiply the two results. That last multiplication costs arr[i \u2212 1] \u00d7 arr[k] \u00d7 arr[j].","dp[i][j] = min over k of dp[i][k] + dp[k + 1][j] + arr[i \u2212 1] \u00d7 arr[k] \u00d7 arr[j]. A single matrix costs 0."],
+cx:"O(n\u00b3) time, O(n\u00b2) space",
+c:`static int matrixChainOrder(int[] arr) {
+    int n = arr.length;                       // there are n - 1 matrices
+    int[][] dp = new int[n][n];               // matrix k is arr[k - 1] x arr[k]
+    for (int len = 2; len < n; len++)         // chain length, in matrices
+        for (int i = 1; i + len - 1 < n; i++) {
+            int j = i + len - 1;
+            dp[i][j] = Integer.MAX_VALUE;
+            for (int k = i; k < j; k++) {
+                int cost = dp[i][k] + dp[k + 1][j] + arr[i - 1] * arr[k] * arr[j];
+                dp[i][j] = Math.min(dp[i][j], cost);
+            }
+        }
+    return n > 2 ? dp[1][n - 1] : 0;
+}`},
+{t:"Minimum Cost to Cut a Stick",g:"Partition DP",
+s:"A stick of length n must be cut at the given positions, in any order. Each cut costs the current length of the piece being cut. Find the minimum total cost.",
+h:["Sort the cuts and add the two ends (0 and n) as extra positions.","State: dp[i][j] = minimum cost to cut the piece between positions pos[i] and pos[j].","Choose k, the first cut made in this piece: it costs pos[j] \u2212 pos[i], and leaves two independent pieces. dp[i][j] = min over k of dp[i][k] + dp[k][j] + (pos[j] \u2212 pos[i])"],
+cx:"O(c\u00b3) for c cuts",
+c:`static int minCost(int n, int[] cuts) {
+    int c = cuts.length;
+    int[] sorted = cuts.clone();
+    Arrays.sort(sorted);
+    int[] pos = new int[c + 2];               // 0, the sorted cuts, then n
+    pos[0] = 0;
+    pos[c + 1] = n;
+    for (int i = 0; i < c; i++) pos[i + 1] = sorted[i];
+    int[][] dp = new int[c + 2][c + 2];
+    for (int len = 2; len <= c + 1; len++)
+        for (int i = 0; i + len <= c + 1; i++) {
+            int j = i + len;
+            dp[i][j] = Integer.MAX_VALUE;
+            for (int k = i + 1; k < j; k++)   // the first cut made in this piece
+                dp[i][j] = Math.min(dp[i][j], dp[i][k] + dp[k][j] + pos[j] - pos[i]);
+        }
+    return dp[0][c + 1];
+}`},
+{t:"Burst Balloons",g:"Partition DP",
+s:"Bursting balloon k earns nums[k \u2212 1] \u00d7 nums[k] \u00d7 nums[k + 1] coins (a missing neighbour counts as 1). Find the maximum coins from bursting all balloons.",
+h:["Pad the array with a 1 at each end.","State: dp[i][j] = most coins from bursting every balloon strictly between i and j.","Think about the LAST balloon k to burst in (i, j). When it bursts, its neighbours are exactly i and j, so it earns a[i] \u00d7 a[k] \u00d7 a[j]. The balloons on each side were burst independently.","dp[i][j] = max over k of dp[i][k] + dp[k][j] + a[i] \u00d7 a[k] \u00d7 a[j]"],
+cx:"O(n\u00b3) time, O(n\u00b2) space",
+c:`static int maxCoins(int[] nums) {
+    int n = nums.length;
+    int[] a = new int[n + 2];
+    a[0] = a[n + 1] = 1;                      // padding
+    for (int i = 0; i < n; i++) a[i + 1] = nums[i];
+    int[][] dp = new int[n + 2][n + 2];
+    for (int len = 2; len <= n + 1; len++)
+        for (int i = 0; i + len <= n + 1; i++) {
+            int j = i + len;
+            for (int k = i + 1; k < j; k++)   // k = the LAST balloon burst in (i, j)
+                dp[i][j] = Math.max(dp[i][j],
+                    dp[i][k] + dp[k][j] + a[i] * a[k] * a[j]);
+        }
+    return dp[0][n + 1];
+}`},
+{t:"Evaluate Boolean Expression to True",g:"Partition DP",
+s:"The expression is T and F joined by & | ^ (for example T|F&T). Count the ways to put brackets so that it evaluates to true, modulo 1e9 + 7.",
+h:["State: for the operands i..j, t[i][j] = ways to be true and f[i][j] = ways to be false.","Choose k, the operator evaluated last. The left side is operands i..k and the right side is k + 1..j.","For &, true needs both true. For |, true is every way except both false. For ^, true needs the two sides to differ. The false ways are the total minus the true ways."],
+cx:"O(n\u00b3)",
+c:`static int countWays(String exp) {
+    final long MOD = 1_000_000_007L;
+    int n = (exp.length() + 1) / 2;           // number of operands
+    long[][] t = new long[n][n], f = new long[n][n];
+    for (int i = 0; i < n; i++) {
+        char c = exp.charAt(2 * i);
+        t[i][i] = (c == 'T') ? 1 : 0;
+        f[i][i] = (c == 'F') ? 1 : 0;
+    }
+    for (int len = 2; len <= n; len++)
+        for (int i = 0; i + len - 1 < n; i++) {
+            int j = i + len - 1;
+            for (int k = i; k < j; k++) {     // operator at index 2k + 1 is evaluated last
+                char op = exp.charAt(2 * k + 1);
+                long lt = t[i][k], lf = f[i][k];
+                long rt = t[k + 1][j], rf = f[k + 1][j];
+                long total = (lt + lf) % MOD * ((rt + rf) % MOD) % MOD;
+                long trueWays;
+                if (op == '&') trueWays = lt * rt % MOD;
+                else if (op == '|') trueWays = (total - lf * rf % MOD + MOD) % MOD;
+                else trueWays = (lt * rf + lf * rt) % MOD;
+                t[i][j] = (t[i][j] + trueWays) % MOD;
+                f[i][j] = (f[i][j] + total - trueWays + MOD) % MOD;
+            }
+        }
+    return (int) t[0][n - 1];
+}`},
+{t:"Palindrome Partitioning II",g:"Partition DP",
+s:"Cut a string so that every piece is a palindrome. Find the minimum number of cuts.",
+h:["First build a table pal[i][j] that says whether s[i..j] is a palindrome: the ends match and the inside is a palindrome (or has fewer than two characters).","State: dp[j] = minimum cuts for the prefix s[0..j]. If the whole prefix is a palindrome, it is 0.","Otherwise try every last piece s[i..j] that is a palindrome: dp[j] = min of dp[i \u2212 1] + 1."],
+cx:"O(n\u00b2) time and space",
+c:`static int minCut(String s) {
+    int n = s.length();
+    boolean[][] pal = new boolean[n][n];      // pal[i][j]: s[i..j] is a palindrome
+    for (int i = n - 1; i >= 0; i--)
+        for (int j = i; j < n; j++)
+            pal[i][j] = s.charAt(i) == s.charAt(j) && (j - i < 2 || pal[i + 1][j - 1]);
+    int[] dp = new int[n];                    // dp[j]: min cuts for s[0..j]
+    for (int j = 0; j < n; j++) {
+        if (pal[0][j]) {
+            dp[j] = 0;                        // the whole prefix is a palindrome
+            continue;
+        }
+        dp[j] = j;                            // worst case: cut between every character
+        for (int i = 1; i <= j; i++)
+            if (pal[i][j]) dp[j] = Math.min(dp[j], dp[i - 1] + 1);
+    }
+    return dp[n - 1];
+}`},
+{t:"Partition Array for Maximum Sum",g:"Partition DP",
+s:"Split the array into contiguous parts of length at most k. Each part\u2019s values are all replaced by that part\u2019s maximum. Find the largest possible sum.",
+h:["State: dp[i] = best sum for the first i elements.","Try every length len from 1 to k for the last part. Its value is len \u00d7 (maximum of those len elements), and the rest is dp[i \u2212 len].","Update the running maximum as you extend the part leftwards."],
+cx:"O(n \u00d7 k) time, O(n) space",
+c:`static int maxSumAfterPartitioning(int[] arr, int k) {
+    int n = arr.length;
+    int[] dp = new int[n + 1];                // dp[i]: best sum for the first i elements
+    for (int i = 1; i <= n; i++) {
+        int curMax = 0;
+        for (int len = 1; len <= k && len <= i; len++) {
+            curMax = Math.max(curMax, arr[i - len]);   // max of the last len elements
+            dp[i] = Math.max(dp[i], dp[i - len] + curMax * len);
+        }
+    }
+    return dp[n];
+}`},
+{t:"Count Square Submatrices with All 1s",g:"Squares",
+s:"Count the square submatrices (of any size) that contain only 1s.",
+h:["State: dp[i][j] = side of the largest all-1 square whose bottom-right corner is (i, j).","If the cell is 1: dp[i][j] = 1 + min(up, left, up-left). The three neighbours limit how far the square can grow.","A largest square of side s ending at a cell means s squares end there (sides 1 to s). So the answer is the sum of all dp values."],
+cx:"O(n \u00d7 m)",
+c:`static int countSquares(int[][] matrix) {
+    int n = matrix.length, m = matrix[0].length, total = 0;
+    int[][] dp = new int[n][m];
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++) {
+            if (matrix[i][j] == 0) continue;
+            if (i == 0 || j == 0) dp[i][j] = 1;
+            else dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
+                                Math.min(dp[i - 1][j], dp[i][j - 1]));
+            total += dp[i][j];                // dp squares end at this corner
+        }
+    return total;
+}`},
+{t:"Maximum Rectangle with All 1s",g:"Squares",
+s:"Find the area of the largest rectangle of 1s in a binary matrix.",
+h:["This is the same problem as Maximal Rectangle on the Stack and Queue page.","Build a histogram for each row (the count of consecutive 1s going up), and run Largest Rectangle in a Histogram on it."],
+cx:"O(rows \u00d7 cols)",
+c:`static int maximalRectangle(char[][] matrix) {
+    if (matrix.length == 0) return 0;
+    int m = matrix[0].length, best = 0;
+    int[] heights = new int[m];
+    for (char[] row : matrix) {
+        for (int j = 0; j < m; j++)
+            heights[j] = row[j] == '1' ? heights[j] + 1 : 0;
+        best = Math.max(best, largestRectangleArea(heights));   // histogram card
+    }
+    return best;
+}`}
+];
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const hl=s=>esc(s).replace(/(\/\/.*)|\b(if|else|while|for|return|new|static|continue|break)\b|\b(int|long|boolean|void|char|true|false|String|List|ArrayList|Arrays|Math|Integer|StringBuilder|Map|HashMap|LinkedList)\b|\b(\d+)\b/g,
+ (m,c,k,t,n)=>c?'<span class="c">'+c+'</span>':k?'<span class="k">'+k+'</span>':t?'<span class="t">'+t+'</span>':'<span class="n">'+n+'</span>');
+const KEY="dp-java-done";let done={},f="All";
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+const gs=["All",...new Set(P.map(p=>p.g))],bar=document.getElementById("bar"),list=document.getElementById("list");
+const cnt=()=>P.filter(p=>done[p.t]).length+" of "+P.length+" revised";
+function render(){
+ bar.innerHTML="";
+ gs.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("aria-pressed",g===f);b.onclick=()=>{f=g;render()};bar.appendChild(b)});
+ const pr=document.createElement("span");pr.className="prog";pr.textContent=cnt();bar.appendChild(pr);
+ list.innerHTML="";
+ P.filter(p=>f==="All"||p.g===f).forEach(p=>{
+  const d=document.createElement("details");
+  d.innerHTML='<summary><input type="checkbox" aria-label="Mark revised"><span>'+p.t+'</span><span class="tag">'+p.g+'</span></summary><div class="body"><h3>Problem</h3><p>'+esc(p.s)+'</p><h3>Approach</h3><ul>'+p.h.map(x=>"<li>"+esc(x)+"</li>").join("")+'</ul><h3>Java</h3><button class="copy">Copy</button><div class="code">'+hl(p.c)+'</div><p class="cx">'+p.cx+'</p></div>';
+  const cb=d.querySelector("input");cb.checked=!!done[p.t];
+  cb.onclick=e=>e.stopPropagation();
+  cb.onchange=()=>{done[p.t]=cb.checked;save();pr.textContent=cnt()};
+  d.querySelector(".copy").onclick=e=>{try{navigator.clipboard.writeText(p.c);e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy",1200)}catch(x){}};
+  list.appendChild(d);
+ });
+}
+render();
+</script></body></html>
